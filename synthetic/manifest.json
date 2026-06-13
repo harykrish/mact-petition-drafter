@@ -1,0 +1,16 @@
+{
+  "case_id": "MACT-GGM-2024-0412",
+  "description": "Synthetic injury (permanent-disability) MACT case. Engineered to contain exactly one cross-stream contradiction (accident date: police FIR 15/03/2024 vs hospital records 16/03/2024) and one in-stream correction (annual income revised by the authoritative Form 16). All persons, numbers, and documents are fictional.",
+  "ingest_order": [
+    {"file": "police/fir.txt",                  "stream": "police",    "source_type": "FIR"},
+    {"file": "medical/discharge_summary.txt",   "stream": "medical",   "source_type": "Discharge Summary"},
+    {"file": "medical/disability_certificate.txt","stream": "medical", "source_type": "Disability Assessment Certificate"},
+    {"file": "medical/hospital_bill.txt",       "stream": "medical",   "source_type": "Hospital Bill"},
+    {"file": "financial/salary_slip.txt",       "stream": "financial", "source_type": "Salary Slip"},
+    {"file": "financial/form16.txt",            "stream": "financial", "source_type": "Form 16"}
+  ],
+  "expected_findings": {
+    "contradiction": "accident_date: police FIR says 2024-03-15; medical records say 2024-03-16",
+    "correction": "annual_income: 540000 (salary slip) superseded by 600000 (Form 16, authoritative)"
+  }
+}
