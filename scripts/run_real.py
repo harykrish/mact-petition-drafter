@@ -1,15 +1,20 @@
 """Run the loop on the user's REAL documents in /data/ (needs ANTHROPIC_API_KEY).
 
-    .venv/bin/python -m scripts.run_real            # documents only (pdf/docx/txt/json)
-    .venv/bin/python -m scripts.run_real --include-images   # also send scan images to Opus
-    .venv/bin/python -m scripts.run_real --list     # just list what would be ingested
+    .venv/bin/python -m scripts.run_real                 # ALL docs incl. scan images (Opus vision-OCR)
+    .venv/bin/python -m scripts.run_real --no-images     # skip images (text/pdf/docx only)
+    .venv/bin/python -m scripts.run_real --stream financial   # one stream only
+    .venv/bin/python -m scripts.run_real --max 20        # cap how many files (cost control)
+    .venv/bin/python -m scripts.run_real --list          # show what would be ingested (no API calls)
+
+Images (scans, report photos, FIR images, lab results) are READ VIA OPUS 4.8
+VISION — it OCRs the text and understands the document in one pass. Large images
+are auto-downscaled so none are skipped.
 
 ALL output (case_record.json, changelog.md, petition, verifier logs) is written
 to data/_run/ — which is gitignored — so real PII is NEVER committed. The public
-knowledge/ directory is only ever written by the synthetic demo.
-
-This prints field names and classification counts, not extracted values, to keep
-PII off the terminal.
+knowledge/ directory is only ever written by the synthetic demo. The CLI prints
+field names and classification counts, not extracted values, to keep PII off the
+terminal.
 """
 from __future__ import annotations
 
@@ -25,12 +30,16 @@ from src import config, llm, pipeline  # noqa: E402
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--include-images", action="store_true", help="also send scan images (jpg/png) to Opus vision")
+    ap.add_argument("--no-images", action="store_true", help="skip scan images; ingest text/pdf/docx only")
+    ap.add_argument("--stream", action="append", choices=list(config.VALID_STREAMS),
+                    help="limit to one or more streams (repeatable)")
+    ap.add_argument("--max", type=int, default=None, help="cap the number of files (cost control)")
     ap.add_argument("--list", action="store_true", help="list ingestible files and exit (no API calls)")
     ap.add_argument("--no-llm-verify", action="store_true", help="deterministic KB gate only")
     args = ap.parse_args()
 
-    files = pipeline.real_corpus_files(include_images=args.include_images)
+    include_images = not args.no_images
+    files = pipeline.real_corpus_files(include_images=include_images, streams=args.stream, limit=args.max)
     if not files:
         print("No ingestible files found under data/{police,medical,financial}/.")
         return 1
@@ -39,18 +48,18 @@ def main() -> int:
         print("Would ingest %d files (output → %s, gitignored):\n" % (len(files), config.REAL_PATHS.case_record.parent))
         for f in files:
             print("  %-9s %-32s  %s" % (f["stream"], f["source_type"], Path(f["rel"]).name))
-        if not args.include_images:
-            print("\n(images skipped; pass --include-images to include scans)")
+        if args.no_images:
+            print("\n(images skipped via --no-images)")
         return 0
 
     if not llm.api_key_present():
         print("ANTHROPIC_API_KEY is not set. Put it in .env or export it, then retry.")
         return 2
 
-    print("Running the loop on %d REAL documents. Output → %s (gitignored).\n"
+    print("Running the loop on %d REAL documents (images via Opus vision-OCR). Output → %s (gitignored).\n"
           % (len(files), config.REAL_PATHS.case_record.parent))
-    for kind, payload in pipeline.run_real_events(include_images=args.include_images,
-                                                  use_llm=not args.no_llm_verify):
+    for kind, payload in pipeline.run_real_events(include_images=include_images, streams=args.stream,
+                                                  limit=args.max, use_llm=not args.no_llm_verify):
         if kind == "ingest":
             d = payload["doc"]
             if d.get("error"):

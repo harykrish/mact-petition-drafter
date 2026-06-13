@@ -91,7 +91,6 @@ _SOURCE_TYPE_HINTS = [
 ]
 _STREAM_DEFAULT_TYPE = {"police": "Police Document", "medical": "Medical Record",
                         "financial": "Financial Document"}
-MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_PDF_BYTES = 28 * 1024 * 1024
 
 
@@ -103,11 +102,12 @@ def _infer_source_type(filename: str, stream: str) -> str:
     return _STREAM_DEFAULT_TYPE.get(stream, "Document")
 
 
-def real_corpus_files(include_images: bool = False):
-    """List ingestible files under data/<stream>/, skipping junk and (by default) images."""
+def real_corpus_files(include_images: bool = True, streams=None, limit=None):
+    """List ingestible files under data/<stream>/. Images are included by default
+    (read via Opus vision-OCR; large ones are downscaled, never skipped for size)."""
     from . import llm
     out = []
-    for stream in config.VALID_STREAMS:
+    for stream in (streams or config.VALID_STREAMS):
         d = config.DATA_DIR / stream
         if not d.exists():
             continue
@@ -119,21 +119,18 @@ def real_corpus_files(include_images: bool = False):
                 continue
             if ext in llm.IMAGE_MEDIA and not include_images:
                 continue
-            size = p.stat().st_size
-            if ext in llm.IMAGE_MEDIA and size > MAX_IMAGE_BYTES:
-                continue
-            if ext == ".pdf" and size > MAX_PDF_BYTES:
+            if ext == ".pdf" and p.stat().st_size > MAX_PDF_BYTES:
                 continue
             out.append({"path": str(p), "rel": "data/%s/%s" % (stream, p.name),
                         "stream": stream, "source_type": _infer_source_type(p.name, stream)})
-    return out
+    return out[:limit] if limit else out
 
 
-def run_real_events(include_images: bool = False, use_llm: bool = True):
+def run_real_events(include_images: bool = True, use_llm: bool = True, streams=None, limit=None):
     """Run the loop on the user's REAL /data/ documents, writing every artifact to
     a gitignored directory (config.REAL_PATHS). Never touches the public knowledge/."""
     paths = config.REAL_PATHS
-    files = real_corpus_files(include_images=include_images)
+    files = real_corpus_files(include_images=include_images, streams=streams, limit=limit)
     record = store.new_case_record("MACT-REAL-" + store.now_iso()[:10])
     yield ("start", {"case_id": record["case_id"], "files": files, "output_dir": str(paths.case_record.parent)})
     for idx, f in enumerate(files):

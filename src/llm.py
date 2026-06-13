@@ -193,16 +193,42 @@ def extract_facts_from_path(path: str, stream: str, source_doc: str, source_type
                              stream, source_doc, source_type)
     if ext == ".docx":
         return extract_facts(_docx_text(path), stream, source_doc, source_type)
-    data = base64.standard_b64encode(Path(path).read_bytes()).decode("ascii")
     if ext == ".pdf":
+        data = base64.standard_b64encode(Path(path).read_bytes()).decode("ascii")
         block = {"type": "document", "source": {"type": "base64",
                  "media_type": "application/pdf", "data": data}}
     elif ext in IMAGE_MEDIA:
-        block = {"type": "image", "source": {"type": "base64",
-                 "media_type": IMAGE_MEDIA[ext], "data": data}}
+        block = _image_block(path)   # vision-OCR; auto-downscaled to fit API limits
     else:
         raise ValueError("unsupported file type: %s" % ext)
     return _extract_with_blocks([block], stream, source_doc, source_type)
+
+
+def _image_block(path: str, max_edge: int = 2200, max_bytes: int = 4_500_000) -> Dict:
+    """Read a scan/photo as an Opus vision block. Large images are downscaled and
+    re-encoded so they fit the API's per-image size limit (never skipped)."""
+    import io
+    try:
+        from PIL import Image
+    except Exception:
+        data = base64.standard_b64encode(Path(path).read_bytes()).decode("ascii")
+        mt = IMAGE_MEDIA.get(Path(path).suffix.lower(), "image/jpeg")
+        return {"type": "image", "source": {"type": "base64", "media_type": mt, "data": data}}
+    img = Image.open(path)
+    if img.mode not in ("RGB", "L"):
+        img = img.convert("RGB")
+    if max(img.size) > max_edge:
+        r = max_edge / float(max(img.size))
+        img = img.resize((max(1, int(img.size[0] * r)), max(1, int(img.size[1] * r))))
+    data = b""
+    for q in (85, 70, 55, 40, 30):
+        buf = io.BytesIO()
+        img.convert("RGB").save(buf, format="JPEG", quality=q)
+        data = buf.getvalue()
+        if len(data) <= max_bytes:
+            break
+    return {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
+            "data": base64.standard_b64encode(data).decode("ascii")}}
 
 
 # --- 2. KB grading (fresh context) --------------------------------------

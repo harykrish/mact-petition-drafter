@@ -50,13 +50,17 @@ arithmetic re-derivation shown beside the drafter's numbers**.
 ## Run on your real case (private — never committed)
 
 Drop real documents into `data/{police,medical,financial}/` (any mix of
-`.pdf`, `.docx`, `.txt`, `.md`, `.json`, and images). Opus 4.8 reads PDFs and
-scans directly.
+`.pdf`, `.docx`, `.txt`, `.md`, `.json`, and images). PDFs and scan images are
+read **directly by Opus 4.8 vision** — it OCRs the text and understands the
+document structure in one pass (better than tesseract for medical scans, forms,
+and handwriting). Large images are auto-downscaled so none are skipped.
 
 ```bash
-python -m scripts.run_real --list            # show what would be ingested (no API calls)
-python -m scripts.run_real                   # documents only (pdf/docx/txt/json)
-python -m scripts.run_real --include-images  # also send scan images to Opus vision
+python -m scripts.run_real --list             # show what would be ingested (no API calls)
+python -m scripts.run_real                    # ALL docs incl. scan images
+python -m scripts.run_real --no-images        # text/pdf/docx only
+python -m scripts.run_real --stream financial # one stream only
+python -m scripts.run_real --max 20           # cap file count (cost control)
 ```
 
 **Every artifact from a real run is written to `data/_run/`, which is gitignored** —
