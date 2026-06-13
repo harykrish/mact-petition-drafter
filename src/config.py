@@ -4,6 +4,23 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+
+def _load_dotenv() -> None:
+    """Load KEY=VALUE lines from a local .env (gitignored) into the environment,
+    without adding a dependency. Real env vars always win."""
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if not env_path.exists():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
+
+
+_load_dotenv()
+
 # --- Model ---------------------------------------------------------------
 # Pinned per the brief. Override only via env if you must.
 MODEL = os.environ.get("MACT_MODEL", "claude-opus-4-8")
