@@ -52,7 +52,16 @@
   .phead{margin:0 0 4px;font-size:15px;font-weight:600;color:var(--ink)}
   .lead{font-family:var(--serif);font-size:27px;line-height:1.28;font-weight:400;letter-spacing:-.3px;max-width:680px;margin:0 0 6px}
   .lead em{font-style:italic;color:var(--link)}
-  .subt{color:var(--ink-2);font-size:14.5px;margin:0 0 26px;max-width:600px}
+  .subt{color:var(--ink-2);font-size:15.5px;line-height:1.55;margin:0 0 4px;max-width:560px}
+  .hero{padding:30px 0 14px;max-width:680px}
+  .hero .lead{font-size:34px;line-height:1.22}
+  .ctarow{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
+  .btn.big{padding:14px 26px;font-size:15px;border-radius:11px;width:auto}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px}
+  .step .sic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:21px;color:var(--ink);margin-bottom:14px}
+  .step .st{font-weight:600;font-size:15.5px;margin-bottom:6px}
+  .step .sp{font-size:13.5px;color:var(--ink-2);line-height:1.55}
   h2.sec{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:30px 0 13px;font-weight:600}
   .statusline{font-size:13px;color:var(--ink-2);display:flex;align-items:center;gap:8px;min-height:18px;margin-bottom:18px}
   .spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:s .7s linear infinite}
@@ -167,7 +176,8 @@
   <aside class="side">
     <div class="brand"><i class="ti ti-scale"></i> Lexcompile</div>
     <div class="navlist">
-      <button class="navtab active" data-pane="run"><i class="ti ti-player-play"></i> Run</button>
+      <button class="navtab active" data-pane="home"><i class="ti ti-home"></i> Home</button>
+      <button class="navtab" data-pane="process"><i class="ti ti-player-play"></i> Process</button>
       <button class="navtab" data-pane="petition"><i class="ti ti-file-text"></i> Petition</button>
       <button class="navtab" data-pane="evidence"><i class="ti ti-folders"></i> Evidence</button>
       <button class="navtab" data-pane="real"><i class="ti ti-briefcase"></i> Real case</button>
@@ -184,13 +194,29 @@
   </aside>
 
   <div class="content"><div class="inner">
-    <!-- RUN -->
-    <section class="pane active" id="pane-run">
-      <p class="lead">A motor-accident compensation petition takes a paralegal <em>weeks</em>.</p>
-      <p class="subt">Drop in the police, medical and financial documents. Lexcompile reconciles them into one consistent set of facts, flags conflicts for you, drafts the petition, and double-checks every figure before you file.</p>
-      <div class="statusline" id="status"></div>
+    <!-- HOME -->
+    <section class="pane active" id="pane-home">
+      <div class="hero">
+        <p class="lead">A compensation petition takes a paralegal weeks. <em>Lexcompile does it in minutes.</em></p>
+        <p class="subt">Add the case documents. We reconcile the facts, flag any conflicts, draft the petition, and double-check every figure — so it's ready to file.</p>
+        <div class="ctarow">
+          <button class="btn primary big" id="homeReplay"><i class="ti ti-player-play"></i> Watch it work</button>
+          <button class="btn ghost big" id="homeLive"><i class="ti ti-bolt"></i> Run live</button>
+        </div>
+      </div>
       <div class="stats" id="statstrip"></div>
+      <h2 class="sec">How it works</h2>
+      <div class="steps">
+        <div class="step"><div class="sic"><i class="ti ti-file-import"></i></div><div class="st">Add the documents</div><div class="sp">Police, medical and financial files — including scans and photos.</div></div>
+        <div class="step"><div class="sic"><i class="ti ti-git-merge"></i></div><div class="st">Facts reconciled</div><div class="sp">One consistent set of facts. Conflicts are flagged for you, never guessed.</div></div>
+        <div class="step"><div class="sic"><i class="ti ti-checkup-list"></i></div><div class="st">Petition, double-checked</div><div class="sp">Drafted from the facts, with every figure re-computed independently.</div></div>
+      </div>
+    </section>
 
+    <!-- PROCESS -->
+    <section class="pane" id="pane-process">
+      <p class="phead">The loop, step by step</p>
+      <div class="statusline" id="status"></div>
       <div class="pipe" id="stages">
         <div class="node" data-k="ingest"><div class="ic"><i class="ti ti-file-import"></i></div><div class="nl">Ingest</div></div>
         <div class="node" data-k="reconcile"><div class="ic"><i class="ti ti-git-merge"></i></div><div class="nl">Reconcile</div></div>
@@ -198,16 +224,14 @@
         <div class="node" data-k="draft"><div class="ic"><i class="ti ti-writing"></i></div><div class="nl">Draft</div></div>
         <div class="node" data-k="verify_petition"><div class="ic"><i class="ti ti-checkup-list"></i></div><div class="nl">Verify petition</div></div>
       </div>
-
       <div class="grid">
-        <div><div class="card"><div class="cardhead"><i class="ti ti-files"></i> Documents</div><div id="docs"><div class="empty">Press Replay to ingest.</div></div></div></div>
+        <div><div class="card"><div class="cardhead"><i class="ti ti-files"></i> Documents</div><div id="docs"><div class="empty">Press Watch it work to ingest.</div></div></div></div>
         <div>
           <div class="card"><div class="cardhead"><i class="ti ti-database"></i> Knowledge base</div><div id="facts"><div class="empty">No facts yet.</div></div></div>
           <div class="card" style="margin-top:18px"><div class="cardhead"><i class="ti ti-alert-triangle"></i> Contradictions</div><div id="contradictions" class="cpanel">Cross-stream conflicts park here.</div></div>
         </div>
         <div><div class="card"><div class="cardhead"><i class="ti ti-history"></i> Changelog</div><ul id="timeline" class="timeline"><li class="empty">Mutations appear here.</li></ul></div></div>
       </div>
-
       <h2 class="sec">Knowledge-base check</h2>
       <div class="card" id="kbVerify"><div class="empty">Graded before the KB is committed.</div></div>
     </section>
@@ -301,7 +325,7 @@ function renderKbVerify(v){
   $("#kbVerify").innerHTML=`<div style="margin-bottom:11px"><span class="pill ${pass?'pass':'fail'}"><i class="ti ti-${pass?'shield-check':'shield-x'}"></i> ${pass?'Passed — committed':'Failed'}</span></div><div class="checks">`+(v.must||[]).map(c=>`<div class="check ${c.status}"><span class="m">${esc(c.id)} ${c.status==='PASS'?'✓':'✗'}</span><span class="nt">${esc(c.note)}</span></div>`).join("")+`</div>`;
 }
 function petitionHtml(p){return md(p).replace(/\[F(\d+)\]/g,(m,n)=>`<span class="fcite" data-fid="F${n.padStart(3,'0')}">[F${n}]</span>`);}
-function wireCites(){$$(".fcite").forEach(el=>el.addEventListener("click",()=>{showPane("run");const row=document.getElementById("fact-"+el.dataset.fid);if(row){row.scrollIntoView({block:"center",behavior:"smooth"});row.classList.add("flash");setTimeout(()=>row.classList.remove("flash"),1400);}}));}
+function wireCites(){$$(".fcite").forEach(el=>el.addEventListener("click",()=>{showPane("process");const row=document.getElementById("fact-"+el.dataset.fid);if(row){row.scrollIntoView({block:"center",behavior:"smooth"});row.classList.add("flash");setTimeout(()=>row.classList.remove("flash"),1400);}}));}
 function renderAttempt(att){
   const inj=att.injected_error?`<div class="injected"><i class="ti ti-flask"></i> Demo: an arithmetic error was injected to exercise the verifier.</div>`:"";
   $("#petitionWrap").innerHTML=`<div class="attempt-tag">Attempt ${att.attempt}</div>${inj}<div class="doc-view">${petitionHtml(att.petition)}</div>`; wireCites();
@@ -325,7 +349,7 @@ function fillStats(){
 }
 function renderFinal(){if(!TRACE)return;renderDocs(TRACE.ingest);renderRecord(TRACE.record);renderKbVerify(TRACE.kb_verify);const a=(TRACE.draft&&TRACE.draft.attempts)||[];if(a.length)renderAttempt(a[a.length-1]);["ingest","reconcile","verify_kb","draft","verify_petition"].forEach(k=>setStage(k,"done"));fillStats();}
 async function replay(){
-  if(busy||!TRACE)return;busy=true;showPane("run");$("#replayBtn").disabled=true;$("#liveBtn").disabled=true;resetStages();
+  if(busy||!TRACE)return;busy=true;showPane("process");$("#replayBtn").disabled=true;$("#liveBtn").disabled=true;resetStages();
   $("#docs").innerHTML='<div class="empty">…</div>';$("#facts").innerHTML='<div class="empty">…</div>';$("#contradictions").className="cpanel";$("#contradictions").innerHTML="Watching…";$("#timeline").innerHTML="";$("#kbVerify").innerHTML='<div class="empty">…</div>';$("#petVerify").innerHTML='<div class="empty">…</div>';$("#petitionWrap").innerHTML='<div class="empty">…</div>';
   setStage("ingest","active");setStage("reconcile","active");
   const rev=[];let cl=0;
@@ -343,7 +367,7 @@ async function replay(){
 }
 let es=null;
 function runLive(){
-  if(busy)return;busy=true;showPane("run");$("#replayBtn").disabled=true;$("#liveBtn").disabled=true;resetStages();const dt=[];
+  if(busy)return;busy=true;showPane("process");$("#replayBtn").disabled=true;$("#liveBtn").disabled=true;resetStages();const dt=[];
   ["#docs","#facts","#kbVerify","#petVerify","#petitionWrap"].forEach(s=>$(s).innerHTML='<div class="empty">…</div>');$("#contradictions").className="cpanel";$("#contradictions").innerHTML="Watching…";
   setStatus("Starting live analysis…",true);
   es=new EventSource(`/api/run-stream?inject_error=${$("#injectBox").checked?1:0}&use_llm=1`);
@@ -366,6 +390,7 @@ function loadReal(){fetch("/api/real-stats").then(r=>r.json()).then(s=>{
    <p class="empty" style="margin-top:14px">${esc(s.note||"")}</p>`;
 }).catch(()=>{});}
 $("#replayBtn").addEventListener("click",replay);$("#liveBtn").addEventListener("click",runLive);
+var hr=$("#homeReplay");if(hr)hr.addEventListener("click",replay);var hl=$("#homeLive");if(hl)hl.addEventListener("click",runLive);
 $("#repoBadge").href="https://github.com/harykrish/mact-petition-drafter";
 fetch("/api/health").then(r=>r.json()).then(h=>{$("#keyBadge").innerHTML=`<span class="dot ${h.api_key_present?'ok':'no'}"></span> ${h.api_key_present?'Live analysis ready':'Demo mode'}`;if(!h.api_key_present){$("#liveBtn").disabled=true;$("#liveBtn").title="Live analysis unavailable in demo mode";}});
 loadCorpus();loadPrec();loadLogs();loadReal();
