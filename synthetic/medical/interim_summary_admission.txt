@@ -6,9 +6,11 @@ Patient: Mr. V. A. Rao                Age/Sex: 48 / Male
 UHID: KH-2026-44817                   Bed: Neuro-ICU
 Date of Admission: 06/03/2026         Summary date: 09/03/2026
 
-History: Patient brought unconscious to Emergency on 06/03/2026 following a
-road traffic accident the previous night in which his car was struck by a
-lorry. GCS 6/15 on arrival; intubated and ventilated.
+History: Patient brought unconscious to Emergency on 06/03/2026. As per the
+accompanying attendant, the road traffic accident — in which his car was struck
+by a lorry — occurred on the evening of 06/03/2026, a few hours before arrival.
+Date of accident recorded as 06/03/2026. GCS 6/15 on arrival; intubated and
+ventilated.
 
 Provisional diagnosis:
   1. Severe traumatic brain injury — diffuse axonal injury with bilateral

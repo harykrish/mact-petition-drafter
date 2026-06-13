@@ -9,3 +9,4 @@ output/
 venv/
 *.egg-info/
 .DS_Store
+logs/*.md
