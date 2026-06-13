@@ -38,7 +38,10 @@ OUTPUT_DIR = BASE_DIR / "output"
 
 CASE_RECORD_PATH = KNOWLEDGE_DIR / "case_record.json"
 CHANGELOG_MD_PATH = KNOWLEDGE_DIR / "changelog.md"
-PETITION_PATH = OUTPUT_DIR / "petition_draft.md"
+# Synthetic petition lives in knowledge/ (tracked) so the deployed demo can show
+# it on load and it serves as committed "done" evidence. Real runs write their
+# petition under data/_run/ (gitignored) via REAL_PATHS.
+PETITION_PATH = KNOWLEDGE_DIR / "petition_draft.md"
 
 KB_INVARIANTS_PATH = RUBRIC_DIR / "kb_invariants.md"
 PETITION_RUBRIC_PATH = RUBRIC_DIR / "petition_rubric.md"
