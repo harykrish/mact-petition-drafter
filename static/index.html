@@ -174,13 +174,12 @@
     </div>
     <div class="sideactions">
       <button class="btn primary" id="replayBtn"><i class="ti ti-player-play"></i> Replay</button>
-      <button class="btn ghost" id="liveBtn"><i class="ti ti-bolt"></i> Run live on Opus</button>
+      <button class="btn ghost" id="liveBtn"><i class="ti ti-bolt"></i> Run live</button>
       <label class="toggle"><input type="checkbox" id="injectBox" /> Inject an arithmetic error</label>
     </div>
     <div class="sidemeta">
-      <span class="mstat" id="modelBadge"><span class="dot"></span> model …</span>
-      <span class="mstat" id="keyBadge"><span class="dot"></span> key …</span>
-      <a id="repoBadge" href="#" target="_blank" rel="noopener"><i class="ti ti-brand-github"></i> Source on GitHub</a>
+      <span class="mstat" id="keyBadge"><span class="dot"></span> …</span>
+      <a id="repoBadge" href="#" target="_blank" rel="noopener"><i class="ti ti-brand-github"></i> Open source</a>
     </div>
   </aside>
 
@@ -188,7 +187,7 @@
     <!-- RUN -->
     <section class="pane active" id="pane-run">
       <p class="lead">A motor-accident compensation petition takes a paralegal <em>weeks</em>.</p>
-      <p class="subt">Lexcompile ingests the documents, reconciles them into one self-consistent knowledge base, drafts the petition from facts only, and re-derives every figure independently — on claude-opus-4-8.</p>
+      <p class="subt">Drop in the police, medical and financial documents. Lexcompile reconciles them into one consistent set of facts, flags conflicts for you, drafts the petition, and double-checks every figure before you file.</p>
       <div class="statusline" id="status"></div>
       <div class="stats" id="statstrip"></div>
 
@@ -209,13 +208,13 @@
         <div><div class="card"><div class="cardhead"><i class="ti ti-history"></i> Changelog</div><ul id="timeline" class="timeline"><li class="empty">Mutations appear here.</li></ul></div></div>
       </div>
 
-      <h2 class="sec">KB verification · fresh context</h2>
+      <h2 class="sec">Knowledge-base check</h2>
       <div class="card" id="kbVerify"><div class="empty">Graded before the KB is committed.</div></div>
     </section>
 
     <!-- PETITION -->
     <section class="pane" id="pane-petition">
-      <h2 class="sec">Verification · arithmetic re-derived</h2>
+      <h2 class="sec">Independent review · every figure re-computed</h2>
       <div class="card" id="petVerify"><div class="empty">Run the loop to verify a petition.</div></div>
       <h2 class="sec">Drafted petition · click a <span style="font-family:var(--mono)">[F##]</span> to trace it</h2>
       <div id="petitionWrap"><div class="empty">Drafted once the KB passes.</div></div>
@@ -346,7 +345,7 @@ let es=null;
 function runLive(){
   if(busy)return;busy=true;showPane("run");$("#replayBtn").disabled=true;$("#liveBtn").disabled=true;resetStages();const dt=[];
   ["#docs","#facts","#kbVerify","#petVerify","#petitionWrap"].forEach(s=>$(s).innerHTML='<div class="empty">…</div>');$("#contradictions").className="cpanel";$("#contradictions").innerHTML="Watching…";
-  setStatus("Connecting to Opus…",true);
+  setStatus("Starting live analysis…",true);
   es=new EventSource(`/api/run-stream?inject_error=${$("#injectBox").checked?1:0}&use_llm=1`);
   es.addEventListener("start",()=>{setStage("ingest","active");setStatus("Ingesting…",true);});
   es.addEventListener("ingest",e=>{const p=JSON.parse(e.data);dt.push(p.doc);renderDocs(dt);setStage("ingest","active");setStage("reconcile","active");renderRecord(p.record);setStatus(`Ingested ${p.index+1}/${p.total}`,true);});
@@ -362,13 +361,13 @@ function loadLogs(){fetch("/api/logs").then(r=>r.json()).then(d=>{let h="";["kb_
 function loadReal(){fetch("/api/real-stats").then(r=>r.json()).then(s=>{
   if(!s||!s.total_documents){$("#realPanel").innerHTML='<div class="empty">No stats.</div>';return;}
   const st=Object.entries(s.by_stream||{}).map(([k,v])=>`${v} ${k}`).join(" · "),kn=Object.entries(s.by_kind||{}).map(([k,v])=>`${v} ${k}`).join(" · ");
-  $("#realPanel").innerHTML=`<div class="callout"><i class="ti ti-shield-lock"></i><div>The same loop runs on the advocate's real catastrophic-injury case. Scans and report photos are read by Opus 4.8 vision-OCR; every real-run artifact is written to a gitignored folder — no patient data is committed or deployed.</div></div>
+  $("#realPanel").innerHTML=`<div class="callout"><i class="ti ti-shield-lock"></i><div>The same loop runs on the advocate's real catastrophic-injury case. Scans and report photos are read directly (vision OCR); every real-run file stays in a private folder on the advocate's device — no patient data is uploaded, committed, or deployed.</div></div>
    <div class="realgrid"><div class="rstat"><div class="v">${s.total_documents}</div><div class="l">real documents</div></div><div class="rstat"><div class="v" style="font-size:17px">${esc(st)}</div><div class="l">by stream</div></div><div class="rstat"><div class="v" style="font-size:17px">${esc(kn)}</div><div class="l">by type</div></div></div>
    <p class="empty" style="margin-top:14px">${esc(s.note||"")}</p>`;
 }).catch(()=>{});}
 $("#replayBtn").addEventListener("click",replay);$("#liveBtn").addEventListener("click",runLive);
 $("#repoBadge").href="https://github.com/harykrish/mact-petition-drafter";
-fetch("/api/health").then(r=>r.json()).then(h=>{$("#modelBadge").innerHTML=`<span class="dot ok"></span> ${esc(h.model)}`;$("#keyBadge").innerHTML=`<span class="dot ${h.api_key_present?'ok':'no'}"></span> API key ${h.api_key_present?'set':'not set'}`;if(!h.api_key_present){$("#liveBtn").disabled=true;$("#liveBtn").title="Set ANTHROPIC_API_KEY to run live";}});
+fetch("/api/health").then(r=>r.json()).then(h=>{$("#keyBadge").innerHTML=`<span class="dot ${h.api_key_present?'ok':'no'}"></span> ${h.api_key_present?'Live analysis ready':'Demo mode'}`;if(!h.api_key_present){$("#liveBtn").disabled=true;$("#liveBtn").title="Live analysis unavailable in demo mode";}});
 loadCorpus();loadPrec();loadLogs();loadReal();
 fetch("/api/replay").then(r=>r.ok?r.json():null).then(t=>{if(t&&t.record){TRACE=t;renderFinal();setStatus("Loaded a captured run — press Replay to watch it build.",false);}else{fetch("/api/state").then(r=>r.json()).then(s=>{if(s.case_record)renderRecord(s.case_record);if(s.petition_md){$("#petitionWrap").innerHTML=`<div class="doc-view">${petitionHtml(s.petition_md)}</div>`;wireCites();}});}});
 </script>
