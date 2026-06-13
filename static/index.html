@@ -10,9 +10,9 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
 <style>
   :root{
-    --paper:#F6F4EE; --surface:#FFFFFF; --surface-2:#FBFAF6;
-    --ink:#1C1A16; --ink-2:#5A554C; --muted:#928C80; --line:#E8E3D8; --line-2:#F0ECE2;
-    --accent:#1C1A16; --accent-soft:#EFEADF; --link:#7A4A24;
+    --paper:#F6F7F8; --surface:#FFFFFF; --surface-2:#F3F5F6;
+    --ink:#15181C; --ink-2:#515862; --muted:#8A9098; --line:#E5E9EC; --line-2:#EFF2F4;
+    --accent:#15181C; --accent-soft:#EAEEF1; --link:#2F5FB0;
     --police:#3B6EA5; --medical:#2C7D6A; --financial:#A9742F;
     --pass:#3E7B55; --pass-bg:#EAF1EA; --fail:#A8423B; --fail-bg:#F8EAE9; --amber:#9E6E1E; --amber-bg:#F6EFDD; --disputed:#A55C24;
     --r:12px; --r-sm:9px;
@@ -53,15 +53,21 @@
   .lead{font-family:var(--serif);font-size:27px;line-height:1.28;font-weight:400;letter-spacing:-.3px;max-width:680px;margin:0 0 6px}
   .lead em{font-style:italic;color:var(--link)}
   .subt{color:var(--ink-2);font-size:15.5px;line-height:1.55;margin:0 0 4px;max-width:560px}
-  .hero{padding:30px 0 14px;max-width:680px}
-  .hero .lead{font-size:34px;line-height:1.22}
-  .ctarow{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
-  .btn.big{padding:14px 26px;font-size:15px;border-radius:11px;width:auto}
-  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
-  .step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px}
-  .step .sic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:21px;color:var(--ink);margin-bottom:14px}
-  .step .st{font-weight:600;font-size:15.5px;margin-bottom:6px}
-  .step .sp{font-size:13.5px;color:var(--ink-2);line-height:1.55}
+  /* assistant launcher (home) */
+  .launcher{max-width:680px;margin:7vh auto 0}
+  .greet{font-family:var(--sans);font-size:30px;font-weight:600;letter-spacing:-.6px;line-height:1.2;margin:0 0 10px}
+  .greetsub{color:var(--ink-2);font-size:15.5px;line-height:1.55;margin:0 0 26px;max-width:560px}
+  .cmdbox{display:flex;align-items:center;gap:13px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 15px 15px 18px;cursor:pointer;transition:.2s}
+  .cmdbox:hover{border-color:var(--accent)}
+  .cmdicon{font-size:20px;color:var(--muted)}
+  .cmdtext{flex:1;color:var(--ink-2);font-size:15px}
+  .cmdgo{flex:0 0 auto;width:38px;height:38px;border-radius:11px;background:var(--accent);color:#fff;border:0;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer}
+  .cmdgo:hover{background:#000}
+  .wftiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:16px}
+  .wftile{display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;font-family:var(--sans);width:100%;color:var(--ink)}
+  .wftile:hover{background:var(--surface-2);border-color:var(--accent)}
+  .wftile i{font-size:20px;color:var(--ink)}
+  .wftile .wt{font-size:14px;font-weight:600} .wftile .wp{font-size:12px;color:var(--muted);margin-top:1px}
   h2.sec{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:30px 0 13px;font-weight:600}
   .statusline{font-size:13px;color:var(--ink-2);display:flex;align-items:center;gap:8px;min-height:18px;margin-bottom:18px}
   .spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:s .7s linear infinite}
@@ -179,7 +185,7 @@
       <button class="navtab active" data-pane="home"><i class="ti ti-home"></i> Home</button>
       <button class="navtab" data-pane="process"><i class="ti ti-player-play"></i> Process</button>
       <button class="navtab" data-pane="petition"><i class="ti ti-file-text"></i> Petition</button>
-      <button class="navtab" data-pane="evidence"><i class="ti ti-folders"></i> Evidence</button>
+      <button class="navtab" data-pane="evidence"><i class="ti ti-folders"></i> Sources</button>
       <button class="navtab" data-pane="real"><i class="ti ti-briefcase"></i> Real case</button>
     </div>
     <div class="sideactions">
@@ -194,22 +200,21 @@
   </aside>
 
   <div class="content"><div class="inner">
-    <!-- HOME -->
+    <!-- HOME (assistant launcher) -->
     <section class="pane active" id="pane-home">
-      <div class="hero">
-        <p class="lead">A compensation petition takes a paralegal weeks. <em>Lexcompile does it in minutes.</em></p>
-        <p class="subt">Add the case documents. We reconcile the facts, flag any conflicts, draft the petition, and double-check every figure — so it's ready to file.</p>
-        <div class="ctarow">
-          <button class="btn primary big" id="homeReplay"><i class="ti ti-player-play"></i> Watch it work</button>
-          <button class="btn ghost big" id="homeLive"><i class="ti ti-bolt"></i> Run live</button>
+      <div class="launcher">
+        <h1 class="greet">Draft a compensation petition from a case file.</h1>
+        <p class="greetsub">Add the police, medical and financial documents. Lexcompile reconciles the facts, flags any conflicts, drafts the petition, and checks every figure — ready to file.</p>
+        <div class="cmdbox" id="cmdbox">
+          <i class="ti ti-sparkles cmdicon"></i>
+          <div class="cmdtext">Draft a Motor Accident Claims petition from the case documents</div>
+          <button class="cmdgo" id="homeReplay" aria-label="Start"><i class="ti ti-arrow-right"></i></button>
         </div>
-      </div>
-      <div class="stats" id="statstrip"></div>
-      <h2 class="sec">How it works</h2>
-      <div class="steps">
-        <div class="step"><div class="sic"><i class="ti ti-file-import"></i></div><div class="st">Add the documents</div><div class="sp">Police, medical and financial files — including scans and photos.</div></div>
-        <div class="step"><div class="sic"><i class="ti ti-git-merge"></i></div><div class="st">Facts reconciled</div><div class="sp">One consistent set of facts. Conflicts are flagged for you, never guessed.</div></div>
-        <div class="step"><div class="sic"><i class="ti ti-checkup-list"></i></div><div class="st">Petition, double-checked</div><div class="sp">Drafted from the facts, with every figure re-computed independently.</div></div>
+        <div class="wftiles">
+          <button class="wftile" id="homeLive"><i class="ti ti-bolt"></i><div><div class="wt">Run live on the case</div><div class="wp">Real analysis, end to end</div></div></button>
+          <button class="wftile" data-goto="evidence"><i class="ti ti-folder"></i><div><div class="wt">Browse the documents</div><div class="wp">Sources, precedents, checks</div></div></button>
+          <button class="wftile" data-goto="petition"><i class="ti ti-file-text"></i><div><div class="wt">Open the petition</div><div class="wp">Drafted &amp; verified</div></div></button>
+        </div>
       </div>
     </section>
 
@@ -238,6 +243,7 @@
 
     <!-- PETITION -->
     <section class="pane" id="pane-petition">
+      <div class="stats" id="statstrip"></div>
       <h2 class="sec">Independent review · every figure re-computed</h2>
       <div class="card" id="petVerify"><div class="empty">Run the loop to verify a petition.</div></div>
       <h2 class="sec">Drafted petition · click a <span style="font-family:var(--mono)">[F##]</span> to trace it</h2>
@@ -391,6 +397,8 @@ function loadReal(){fetch("/api/real-stats").then(r=>r.json()).then(s=>{
 }).catch(()=>{});}
 $("#replayBtn").addEventListener("click",replay);$("#liveBtn").addEventListener("click",runLive);
 var hr=$("#homeReplay");if(hr)hr.addEventListener("click",replay);var hl=$("#homeLive");if(hl)hl.addEventListener("click",runLive);
+var cb=$("#cmdbox");if(cb)cb.addEventListener("click",e=>{if(e.target.closest("#homeReplay"))return;replay();});
+$$(".wftile[data-goto]").forEach(t=>t.addEventListener("click",()=>showPane(t.dataset.goto)));
 $("#repoBadge").href="https://github.com/harykrish/mact-petition-drafter";
 fetch("/api/health").then(r=>r.json()).then(h=>{$("#keyBadge").innerHTML=`<span class="dot ${h.api_key_present?'ok':'no'}"></span> ${h.api_key_present?'Live analysis ready':'Demo mode'}`;if(!h.api_key_present){$("#liveBtn").disabled=true;$("#liveBtn").title="Live analysis unavailable in demo mode";}});
 loadCorpus();loadPrec();loadLogs();loadReal();
