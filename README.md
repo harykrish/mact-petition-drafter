@@ -141,3 +141,7 @@ draft is caught deterministically and fed back for revision.
 Facts only — never medical advice or clinical recommendations; the output is a
 legal document. The repo is public; real documents live in `/data/` (gitignored)
 and the demo runs entirely on the synthetic set.
+
+---
+
+Engineering & model details: [`TECH.md`](TECH.md).
