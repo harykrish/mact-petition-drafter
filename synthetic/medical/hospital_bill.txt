@@ -1,21 +1,21 @@
-MEDANTA – THE MEDICITY, GURUGRAM
+KAUVERY HOSPITAL, CHENNAI
 FINAL CONSOLIDATED IN-PATIENT BILL
 
-Patient: Mr. Ramesh K. Sharma            UHID: MG-2024-118742
-Admission: 16/03/2024   Discharge: 02/04/2024   (18 days)
-Bill No.: IPB-2024-55190                 Bill Date: 02/04/2024
+Patient: Mr. Vikram Anand Rao        UHID: KH-2026-44817
+Admission: 06/03/2026   Discharge: 20/04/2026   (45 days)
+Bill No.: KH-IPB-2026-7741           Date: 20/04/2026
 
 ------------------------------------------------------------------
-  Head of Charge                                     Amount (INR)
+  Head of Charge                                       Amount (INR)
 ------------------------------------------------------------------
-  Surgery (ORIF right femur, OT, implants, anaesthesia)  2,00,000
-  Room, ICU & nursing charges (18 days)                    90,000
-  Medicines, consumables & dressings                       35,000
-  Diagnostics (X-ray, CT head, MRI, lab)                   25,000
+  Neurosurgery & cervical fixation (OT, implants)         15,00,000
+  Neuro-ICU & ventilator support (26 days)                20,00,000
+  Imaging — CT / MRI brain & spine series                  4,00,000
+  Medicines, consumables & blood products                  6,00,000
+  Neuro-rehabilitation (in-patient)                        5,00,000
 ------------------------------------------------------------------
-  TOTAL AMOUNT PAYABLE                                   3,50,000
+  TOTAL                                                   50,00,000
 ------------------------------------------------------------------
 
-Amount received with thanks. This is a computer-generated final bill.
-Payment status: PAID IN FULL by the patient's family.
-Billing Dept., Medanta Hospital, Gurugram.
+Paid in full by the patient's family. Computer-generated final bill.
+Billing Department, Kauvery Hospital, Chennai.

@@ -72,10 +72,14 @@ CANONICAL_FIELDS = {
 SOURCE_AUTHORITY = {
     "FIR": 0.90,
     "Charge Sheet": 0.95,
+    "Police Intimation": 0.88,
     "Discharge Summary": 0.85,
+    "Interim Summary": 0.85,
+    "Imaging Report": 0.83,
     "Disability Assessment Certificate": 0.95,
     "Hospital Bill": 0.90,
     "Salary Slip": 0.80,
+    "CA Income Certificate": 0.85,
     "Form 16": 0.95,
     "ITR": 0.95,
 }

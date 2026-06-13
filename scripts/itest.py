@@ -8,45 +8,49 @@ Run: .venv/bin/python -m scripts.itest
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src import llm, pipeline, store, config  # noqa: E402
-from scripts.selftest import FIXTURE  # noqa: E402
+from src import llm, pipeline, config  # noqa: E402
+from scripts.selftest import FIXTURE, EXPECTED_LOSS, EXPECTED_MEDICAL  # noqa: E402
 
-# source_type -> extracted raws (without provenance; ingest attaches it)
-_BY_TYPE = {st: raws for (_f, _s, st, raws) in FIXTURE}
+# file -> extracted raws (keyed by file, since source_types repeat)
+_BY_FILE = {f: raws for (f, _s, _st, raws) in FIXTURE}
 
-CANNED_PETITION = """# IN THE MOTOR ACCIDENT CLAIMS TRIBUNAL AT GURUGRAM
+_PAIN = 100000
+_TOTAL = EXPECTED_LOSS + EXPECTED_MEDICAL + _PAIN
+
+CANNED_PETITION = """# IN THE MOTOR ACCIDENT CLAIMS TRIBUNAL AT CHENGALPATTU
 
 Claim Petition under Section 166 of the Motor Vehicles Act, 1988.
 
-Ramesh Kumar Sharma [F001] ... Claimant, versus Sat Pal (driver) [F006],
-M/s Sharma Transport Co. (owner) [F007], United India Insurance Co. Ltd. [F008].
+Vikram Anand Rao [F001] ... Claimant, versus Murugan (driver) [F006],
+Sri Lakshmi Transports (owner) [F007], The Oriental Insurance Co. Ltd. [F008].
 
 ## Facts of the accident
-On 2024-03-15 [F003] (note: hospital records state 2024-03-16 — minor discrepancy,
-FIR date adopted) the claimant was struck by a rashly driven truck [F005].
+On 2026-03-05 [F003] (hospital records state 2026-03-06 — discrepancy noted;
+FIR date adopted) the claimant's car was struck by a rashly driven lorry [F005].
 
 ## SCHEDULE OF COMPENSATION
 | Head | Amount (INR) | Basis |
 |------|-------------|-------|
-| Loss of future earning capacity | 5760000 | [F? ] 600000 x 1.5 x 16 x 40% (Sarla Verma, Pranay Sethi) |
-| Medical expenses | 350000 | itemised hospital bill |
-| Pain and suffering | 100000 | Pranay Sethi conventional head |
-| **TOTAL** | 6210000 | |
-"""
+| Loss of future earning capacity | %d | 7200000 x 1.25 x 13 x 80%% (Sarla Verma, Pranay Sethi) |
+| Medical expenses | %d | itemised hospital bill |
+| Pain and suffering | %d | Pranay Sethi conventional head |
+| **TOTAL** | %d | |
+""" % (EXPECTED_LOSS, EXPECTED_MEDICAL, _PAIN, _TOTAL)
 
 
 def fake_extract_facts(doc_text, stream, source_doc, source_type):
-    out = []
-    for r in _BY_TYPE.get(source_type, []):
-        out.append({"field": r["field"], "value": r["value"], "stream": stream,
-                    "source_doc": source_doc, "source_type": source_type,
-                    "extraction_confidence": r["extraction_confidence"]})
-    return out
+    for file, raws in _BY_FILE.items():
+        if source_doc.endswith(file):
+            return [{"field": r["field"], "value": r["value"], "stream": stream,
+                     "source_doc": source_doc, "source_type": source_type,
+                     "extraction_confidence": r["extraction_confidence"]} for r in raws]
+    return []
 
 
 def fake_kb_grade(record):
@@ -59,20 +63,16 @@ def fake_draft_petition(record, feedback=None):
 
 
 def fake_petition_grade(petition_md, record):
-    # parse the loss figure actually present in the petition (so injection is caught)
-    import re
-    m = re.search(r"Loss of future earning capacity \| (\d+)", petition_md)
-    claimed_loss = int(m.group(1)) if m else None
-    m2 = re.search(r"Medical expenses \| (\d+)", petition_md)
-    claimed_med = int(m2.group(1)) if m2 else None
-    m3 = re.search(r"Pain and suffering \| (\d+)", petition_md)
-    pain = int(m3.group(1)) if m3 else 0
-    heads = {"Loss of future earning capacity": claimed_loss or 0,
-             "Medical expenses": claimed_med or 0, "Pain and suffering": pain}
+    def grab(label):
+        m = re.search(re.escape(label) + r" \| (\d+)", petition_md)
+        return int(m.group(1)) if m else None
+    loss, med, pain = grab("Loss of future earning capacity"), grab("Medical expenses"), grab("Pain and suffering")
+    heads = {"Loss of future earning capacity": loss or 0, "Medical expenses": med or 0,
+             "Pain and suffering": pain or 0}
     return {"result": "pass",
             "must": [{"id": m, "status": "PASS", "note": "ok"} for m in
                      ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M11", "M12", "M13"]],
-            "petition_claimed": {"loss_of_earning": claimed_loss, "medical_expenses": claimed_med,
+            "petition_claimed": {"loss_of_earning": loss, "medical_expenses": med,
                                  "heads": heads, "grand_total": sum(heads.values())}}
 
 
@@ -81,9 +81,7 @@ def run(inject):
     llm.kb_grade = fake_kb_grade
     llm.draft_petition = fake_draft_petition
     llm.petition_grade = fake_petition_grade
-    events = list(pipeline.run_full_events(use_llm=True, inject_error=inject))
-    kinds = [k for k, _ in events]
-    return events, kinds
+    return list(pipeline.run_full_events(use_llm=True, inject_error=inject))
 
 
 def main():
@@ -95,27 +93,28 @@ def main():
             failures.append(name)
 
     print("\n== happy path ==")
-    events, kinds = run(inject=False)
-    check("6 ingest events", kinds.count("ingest") == 6)
-    check("one kb_verify event", kinds.count("kb_verify") == 1)
-    kb = dict(events)["kb_verify"] if False else [p for k, p in events if k == "kb_verify"][0]
+    events = run(inject=False)
+    kinds = [k for k, _ in events]
+    check("9 ingest events", kinds.count("ingest") == 9)
+    kb = [p for k, p in events if k == "kb_verify"][0]
     check("KB committed", kb["committed"] is True)
     da = [p for k, p in events if k == "draft_attempt"]
-    check("petition passes on attempt 1", da and da[0]["result"] == "pass")
+    check("petition passes on attempt 1", bool(da) and da[0]["result"] == "pass")
+    check("loss re-derived to %d" % EXPECTED_LOSS,
+          da and da[0]["arithmetic"]["recomputed"]["loss_of_future_earning"]["amount"] == EXPECTED_LOSS)
     check("done event present", "done" in kinds)
     check("case_record.json written", config.CASE_RECORD_PATH.exists())
     check("changelog.md written", config.CHANGELOG_MD_PATH.exists())
     check("petition_draft.md written", config.PETITION_PATH.exists())
 
     print("\n== injected-error path (verifier must catch & revise) ==")
-    events, kinds = run(inject=True)
+    events = run(inject=True)
     da = [p for k, p in events if k == "draft_attempt"]
-    check("first attempt was injected", da and da[0]["injected_error"])
-    check("first attempt REVISE", da and da[0]["result"] == "revise")
-    check("M8 failed on injected attempt", da and "M8" in da[0]["blocking_failures"])
+    check("first attempt was injected", bool(da) and da[0]["injected_error"])
+    check("first attempt REVISE", bool(da) and da[0]["result"] == "revise")
+    check("M8 failed on injected attempt", bool(da) and "M8" in da[0]["blocking_failures"])
     check("a later attempt passes", any(a["result"] == "pass" for a in da))
 
-    # clean up artifacts written by the integration test
     for p in (config.CASE_RECORD_PATH, config.CHANGELOG_MD_PATH, config.PETITION_PATH):
         try:
             p.unlink()

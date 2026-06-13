@@ -172,7 +172,8 @@ def reconcile_fact(record: Dict, raw: Dict) -> Dict:
     f_auth = round(authority(raw["source_type"]), 2)
 
     # CORRECTION — incoming is clearly more authoritative.
-    if f_auth - a_auth >= config.CORRECTION_MARGIN:
+    # (epsilon guards float subtraction, e.g. 0.95 - 0.85 == 0.0999...)
+    if f_auth - a_auth >= config.CORRECTION_MARGIN - 1e-9:
         new_fact = _make_fact(record, raw)
         new_fact["history"].append(_history_entry(
             existing, "Superseded by higher-authority %s (%s)" % (raw["source_type"], new_fact["id"])))
@@ -187,7 +188,7 @@ def reconcile_fact(record: Dict, raw: Dict) -> Dict:
                 "superseded": existing["id"], "field": field}
 
     # Incoming is clearly LESS authoritative — keep existing, archive incoming.
-    if a_auth - f_auth >= config.CORRECTION_MARGIN:
+    if a_auth - f_auth >= config.CORRECTION_MARGIN - 1e-9:
         stale = _make_fact(record, raw)
         stale["superseded"] = True
         stale["history"].append(_history_entry(

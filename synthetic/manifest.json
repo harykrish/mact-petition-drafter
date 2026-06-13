@@ -1,16 +1,19 @@
 {
-  "case_id": "MACT-GGM-2024-0412",
-  "description": "Synthetic injury (permanent-disability) MACT case. Engineered to contain exactly one cross-stream contradiction (accident date: police FIR 15/03/2024 vs hospital records 16/03/2024) and one in-stream correction (annual income revised by the authoritative Form 16). All persons, numbers, and documents are fictional.",
+  "case_id": "MACT-CGP-2026-0215",
+  "description": "Synthetic catastrophic-injury MACT case (severe traumatic brain injury + cervical cord injury) for a high-earning self-employed claimant. Engineered to contain exactly one cross-stream contradiction (accident date: police FIR 05/03/2026 vs hospital records 06/03/2026) and one in-stream correction (annual income revised upward by the authoritative ITR). All persons, firms, hospitals, and numbers are fictional and bear no relation to any real case or company.",
   "ingest_order": [
-    {"file": "police/fir.txt",                  "stream": "police",    "source_type": "FIR"},
-    {"file": "medical/discharge_summary.txt",   "stream": "medical",   "source_type": "Discharge Summary"},
-    {"file": "medical/disability_certificate.txt","stream": "medical", "source_type": "Disability Assessment Certificate"},
-    {"file": "medical/hospital_bill.txt",       "stream": "medical",   "source_type": "Hospital Bill"},
-    {"file": "financial/salary_slip.txt",       "stream": "financial", "source_type": "Salary Slip"},
-    {"file": "financial/form16.txt",            "stream": "financial", "source_type": "Form 16"}
+    {"file": "police/fir.txt",                        "stream": "police",    "source_type": "FIR"},
+    {"file": "police/police_intimation.txt",          "stream": "police",    "source_type": "Police Intimation"},
+    {"file": "medical/interim_summary_admission.txt", "stream": "medical",   "source_type": "Interim Summary"},
+    {"file": "medical/imaging_report.txt",            "stream": "medical",   "source_type": "Imaging Report"},
+    {"file": "medical/interim_summary_followup.txt",  "stream": "medical",   "source_type": "Interim Summary"},
+    {"file": "medical/disability_certificate.txt",    "stream": "medical",   "source_type": "Disability Assessment Certificate"},
+    {"file": "medical/hospital_bill.txt",             "stream": "medical",   "source_type": "Hospital Bill"},
+    {"file": "financial/ca_income_certificate.txt",   "stream": "financial", "source_type": "CA Income Certificate"},
+    {"file": "financial/itr.txt",                     "stream": "financial", "source_type": "ITR"}
   ],
   "expected_findings": {
-    "contradiction": "accident_date: police FIR says 2024-03-15; medical records say 2024-03-16",
-    "correction": "annual_income: 540000 (salary slip) superseded by 600000 (Form 16, authoritative)"
+    "contradiction": "accident_date: police FIR says 2026-03-05; hospital records say 2026-03-06",
+    "correction": "annual_income: 6500000 (preliminary CA certificate) superseded by 7200000 (ITR, authoritative)"
   }
 }

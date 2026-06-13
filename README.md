@@ -58,8 +58,9 @@ python -m scripts.itest      # full pipeline + event stream, incl. inject→catc
 ```
 
 `selftest` asserts the cross-stream accident-date contradiction is caught, the
-income correction supersedes the salary slip (prior value kept in history), and
-the loss of future earning re-derives to ₹57,60,000 (`600000 × 1.5 × 16 × 40%`).
+income correction supersedes the preliminary CA certificate (prior value kept in
+history), and the loss of future earning re-derives to ₹9,36,00,000
+(`7200000 × 1.25 × 13 × 80%` — a self-employed claimant per the Pranay Sethi table).
 
 ## Deploy (Render or Railway)
 
@@ -106,7 +107,7 @@ draft is caught deterministically and fed back for revision.
 
 ```
 /data/        GITIGNORED — real case documents, never committed
-/synthetic/   fake demo corpus (3 streams, 6 docs) + manifest.json
+/synthetic/   fake demo corpus (3 streams, 9 docs; fictional TBI/polytrauma case) + manifest.json
 /precedent/   case-law notes: Sarla Verma, Pranay Sethi, Kavin (citation flagged)
 /rubric/      kb_invariants.md, petition_rubric.md — the grading targets
 /knowledge/   case_record.json, changelog.md (generated; committed as "done" evidence)
