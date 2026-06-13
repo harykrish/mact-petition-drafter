@@ -172,28 +172,81 @@ def _docx_text(path: str) -> str:
     return "\n".join(parts)
 
 
-def _extract_with_blocks(blocks: List[Dict], stream: str, source_doc: str, source_type: str) -> List[Dict]:
-    """Extraction from non-text input (PDF/image content blocks) via Opus vision."""
+# Schema for the vision path: documented facts PLUS optional AI visual observations.
+_VISION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "facts": _EXTRACT_SCHEMA["properties"]["facts"],
+        "observations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "finding": {"type": "string"},
+                    "confidence": {"type": "number"},
+                },
+                "required": ["finding", "confidence"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["facts"],
+    "additionalProperties": False,
+}
+
+_VISION_GUIDANCE = (
+    "\n\nThis input may be an image (a scan, photo, chart, or report page).\n"
+    "Return TWO things:\n"
+    "1) 'facts' — only information actually WRITTEN in the document (typed/printed/"
+    "handwritten text, burned-in metadata: names, dates, study/modality, institution, "
+    "printed values). These are documented facts.\n"
+    "2) 'observations' — if this is a diagnostic image (CT/MRI/X-ray/ECG/ultrasound chart "
+    "etc.), what you VISUALLY observe in the image itself (e.g. an apparent hyperdensity, "
+    "fracture line, mass effect, abnormal trace). These are your interpretation, NOT "
+    "documented facts — they must be confirmed by a clinician. If the input is plain typed "
+    "text with no image to interpret, return an empty observations list.")
+
+
+def _extract_with_blocks(blocks: List[Dict], stream: str, source_doc: str, source_type: str,
+                         extract_observations: bool = True) -> List[Dict]:
+    """Extraction from non-text input (PDF/image content blocks) via Opus vision.
+    Returns documented facts (under `source_type`) plus, optionally, AI visual
+    observations recorded as low-confidence, review-flagged image_finding facts."""
     client = _client()
-    content = list(blocks) + [{"type": "text", "text":
-        "Document type: %s   Stream: %s   Source: %s\nExtract the structured facts from the "
-        "attached document per the rules.\n\nIMPORTANT for images: if this is a raw diagnostic "
-        "scan (e.g. a CT/MRI slice) rather than a typed report, extract ONLY the visible "
-        "text/metadata (patient name, dates, study/modality, institution). Do NOT infer, read, "
-        "or describe any clinical or radiological findings from the scan itself — findings must "
-        "come only from a written radiology report." % (source_type, stream, source_doc)}]
+    instruction = ("Document type: %s   Stream: %s   Source: %s\nExtract the structured facts "
+                   "from the attached document per the rules." % (source_type, stream, source_doc))
+    schema = _EXTRACT_SCHEMA
+    if extract_observations:
+        instruction += _VISION_GUIDANCE
+        schema = _VISION_SCHEMA
+    content = list(blocks) + [{"type": "text", "text": instruction}]
     message = client.messages.create(
         model=config.MODEL,
         max_tokens=4000,
         system=_extract_system(),
         messages=[{"role": "user", "content": content}],
-        output_config={"format": {"type": "json_schema", "schema": _EXTRACT_SCHEMA}},
+        output_config={"format": {"type": "json_schema", "schema": schema}},
     )
-    return _parse_facts(_json_from_text(_text_of(message)), stream, source_doc, source_type)
+    data = _json_from_text(_text_of(message))
+    raws = _parse_facts(data, stream, source_doc, source_type)
+    for obs in data.get("observations", []) or []:
+        finding = str(obs.get("finding", "")).strip()
+        if finding:
+            raws.append({
+                "field": "image_finding",
+                "value": finding,
+                "stream": stream,
+                "source_doc": source_doc,
+                "source_type": "AI Vision Observation",
+                "extraction_confidence": float(obs.get("confidence", 0.4)),
+            })
+    return raws
 
 
-def extract_facts_from_path(path: str, stream: str, source_doc: str, source_type: str) -> List[Dict]:
-    """Multi-format extraction: text/markdown/json/csv, .docx, .pdf, and images."""
+def extract_facts_from_path(path: str, stream: str, source_doc: str, source_type: str,
+                            extract_observations: bool = True) -> List[Dict]:
+    """Multi-format extraction: text/markdown/json/csv, .docx, .pdf, and images.
+    For image/PDF inputs, also captures AI visual observations (flagged, low-confidence)."""
     ext = Path(path).suffix.lower()
     if ext in TEXT_EXTS:
         return extract_facts(Path(path).read_text(encoding="utf-8", errors="ignore"),
@@ -205,10 +258,11 @@ def extract_facts_from_path(path: str, stream: str, source_doc: str, source_type
         block = {"type": "document", "source": {"type": "base64",
                  "media_type": "application/pdf", "data": data}}
     elif ext in IMAGE_MEDIA:
-        block = _image_block(path)   # vision-OCR; auto-downscaled to fit API limits
+        block = _image_block(path)   # vision; auto-downscaled to fit API limits
     else:
         raise ValueError("unsupported file type: %s" % ext)
-    return _extract_with_blocks([block], stream, source_doc, source_type)
+    return _extract_with_blocks([block], stream, source_doc, source_type,
+                                extract_observations=extract_observations)
 
 
 def _image_block(path: str, max_edge: int = 2200, max_bytes: int = 4_500_000) -> Dict:
@@ -278,6 +332,10 @@ def draft_petition(record: Dict, feedback: Optional[str] = None) -> str:
         "- Any fact with needs_human_review=true, or any value listed in contradictions, "
         "MUST NOT be stated as settled — flag it as disputed (note both values and which "
         "you adopt and why).\n"
+        "- Facts with source_type 'AI Vision Observation' are AI interpretations of a scan/"
+        "image, NOT documented evidence. Never cite them as established findings; rely on the "
+        "written radiology reports instead. At most note that they warrant radiologist "
+        "confirmation.\n"
         "- Compute the loss of future earning capacity as: annual_income x (1 + future "
         "prospects) x multiplier x functional_disability%, using the Sarla Verma multiplier "
         "table and the Pranay Sethi future-prospects table from the precedent notes. SHOW "

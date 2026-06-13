@@ -43,7 +43,7 @@ def _resolve_path(source_doc: str) -> Path:
 
 
 def ingest_document(record: Dict, source_doc: str, stream: str, source_type: str,
-                    doc_text: Optional[str] = None) -> Dict:
+                    doc_text: Optional[str] = None, extract_observations: bool = True) -> Dict:
     """Extract facts from one document (any supported format) and reconcile them."""
     from . import llm  # imported lazily so non-LLM paths work without a key
     stored_doc = _normalize_source(source_doc)
@@ -57,7 +57,8 @@ def ingest_document(record: Dict, source_doc: str, stream: str, source_type: str
             raws = llm.extract_facts(path.read_text(encoding="utf-8", errors="ignore"),
                                      stream, stored_doc, source_type)
         else:
-            raws = llm.extract_facts_from_path(str(path), stream, stored_doc, source_type)
+            raws = llm.extract_facts_from_path(str(path), stream, stored_doc, source_type,
+                                               extract_observations=extract_observations)
     results = reconcile.reconcile_facts(record, raws)
     return {
         "source_doc": stored_doc,
@@ -126,7 +127,8 @@ def real_corpus_files(include_images: bool = True, streams=None, limit=None):
     return out[:limit] if limit else out
 
 
-def run_real_events(include_images: bool = True, use_llm: bool = True, streams=None, limit=None):
+def run_real_events(include_images: bool = True, use_llm: bool = True, streams=None, limit=None,
+                    extract_observations: bool = True):
     """Run the loop on the user's REAL /data/ documents, writing every artifact to
     a gitignored directory (config.REAL_PATHS). Never touches the public knowledge/."""
     paths = config.REAL_PATHS
@@ -135,7 +137,8 @@ def run_real_events(include_images: bool = True, use_llm: bool = True, streams=N
     yield ("start", {"case_id": record["case_id"], "files": files, "output_dir": str(paths.case_record.parent)})
     for idx, f in enumerate(files):
         try:
-            trace = ingest_document(record, f["rel"], f["stream"], f["source_type"])
+            trace = ingest_document(record, f["rel"], f["stream"], f["source_type"],
+                                    extract_observations=extract_observations)
         except Exception as exc:
             trace = {"source_doc": f["rel"], "stream": f["stream"], "source_type": f["source_type"],
                      "extracted": 0, "results": [], "error": str(exc)}

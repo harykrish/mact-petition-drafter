@@ -31,6 +31,8 @@ from src import config, llm, pipeline  # noqa: E402
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-images", action="store_true", help="skip scan images; ingest text/pdf/docx only")
+    ap.add_argument("--no-findings", action="store_true",
+                    help="OCR/metadata only; skip AI visual observations of scans")
     ap.add_argument("--stream", action="append", choices=list(config.VALID_STREAMS),
                     help="limit to one or more streams (repeatable)")
     ap.add_argument("--max", type=int, default=None, help="cap the number of files (cost control)")
@@ -59,7 +61,8 @@ def main() -> int:
     print("Running the loop on %d REAL documents (images via Opus vision-OCR). Output → %s (gitignored).\n"
           % (len(files), config.REAL_PATHS.case_record.parent))
     for kind, payload in pipeline.run_real_events(include_images=include_images, streams=args.stream,
-                                                  limit=args.max, use_llm=not args.no_llm_verify):
+                                                  limit=args.max, use_llm=not args.no_llm_verify,
+                                                  extract_observations=not args.no_findings):
         if kind == "ingest":
             d = payload["doc"]
             if d.get("error"):

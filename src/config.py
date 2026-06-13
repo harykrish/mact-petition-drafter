@@ -106,6 +106,9 @@ SOURCE_AUTHORITY = {
     "CA Income Certificate": 0.85,
     "Form 16": 0.95,
     "ITR": 0.95,
+    # AI vision interpretations of a scan/image — deliberately low so they are
+    # always needs_human_review and never asserted as settled in the petition.
+    "AI Vision Observation": 0.40,
 }
 DEFAULT_AUTHORITY = 0.85
 
@@ -124,6 +127,7 @@ NAME_FIELDS = {"victim_name", "offending_driver", "vehicle_owner"}
 # Narrative/descriptive fields: multiple sources can each contribute a phrasing
 # without conflicting. Differing values are appended (corroboration), never
 # flagged as contradictions, and are exempt from the single-active-fact rule.
-NARRATIVE_FIELDS = {"injuries", "negligence", "accident_place", "permanent_disability"}
+NARRATIVE_FIELDS = {"injuries", "negligence", "accident_place", "permanent_disability",
+                    "image_finding"}
 
 NEEDS_REVIEW_BELOW = 0.80
