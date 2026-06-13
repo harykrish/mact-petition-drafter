@@ -2,7 +2,7 @@ services:
   - type: web
     name: mact-petition-drafter
     runtime: python
-    plan: free                # free tier (spins down when idle; bump to "starter" to avoid cold starts)
+    plan: starter           # always-on (Render credits)
     healthCheckPath: /api/health
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
