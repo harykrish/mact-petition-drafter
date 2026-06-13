@@ -41,10 +41,13 @@ def _client():
                 "ANTHROPIC_API_KEY is not set. Set it in your environment (or .env / "
                 "the Render/Railway dashboard) to run the LLM steps.")
         import anthropic
-        # Bounded timeout + retries so a transient network stall can't wedge a
-        # whole run (the SDK default is 10 min/request). Streaming applies the
-        # read timeout per chunk, so long drafts are unaffected.
-        _CLIENT = anthropic.Anthropic(timeout=180.0, max_retries=2)
+        import httpx
+        # Fail fast and retry so a flaky/intermittent network can't wedge a run
+        # (the SDK default is 10 min/request). Short connect timeout catches dead
+        # connections; read timeout is per-chunk for streaming, so long drafts are
+        # unaffected as long as tokens keep arriving.
+        _CLIENT = anthropic.Anthropic(
+            timeout=httpx.Timeout(60.0, connect=8.0), max_retries=4)
     return _CLIENT
 
 
