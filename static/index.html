@@ -350,6 +350,7 @@ async function replay(){
     if(part.contradictions.length){const el=$("#contradictions");if(!el.classList.contains("hit"))el.classList.add("hit");}
     await sleep(820);
   }
+  renderRecord(TRACE.record);   // settle to the complete final KB (full changelog)
   setStage("ingest","done"); setStage("reconcile","done");
   setStatus("Verifying the knowledge base in a fresh context…",true); setStage("verify_kb","active"); await sleep(700);
   renderKbVerify(TRACE.kb_verify); setStage("verify_kb",TRACE.kb_verify.committed?"done":"failed"); await sleep(500);
