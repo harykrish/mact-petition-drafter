@@ -36,6 +36,61 @@ Network-resilience details (non-streaming + bounded timeout + retries) live in
 `llm._client` / the call sites — added after flaky-network failures during the
 build.
 
+## The fresh-context verification pattern
+
+This is the strongest architectural decision in the system. It deserves its own
+section because it's the difference between "LLM checks its own work" (unreliable)
+and "independent agent audits an artifact" (reliable).
+
+### Why it matters
+
+When a drafter and verifier share conversation history, the verifier inherits the
+drafter's reasoning chain. A hallucinated citation looks plausible because the
+verifier "remembers" the reasoning that produced it. A miscalculated number passes
+because the verifier saw the same (wrong) arithmetic steps.
+
+### How NyayaSetu implements it
+
+Each verifier runs as a **separate `messages.create` call** with a freshly
+constructed context:
+
+```
+Verifier context = artifact (KB or petition) + rubric + nothing else
+```
+
+- **No extraction history** — the verifier doesn't know what documents were ingested
+- **No drafter reasoning** — the verifier doesn't see how the petition was written
+- **No prior verdicts** — each verification is independent of previous attempts
+
+This means:
+- A fact the drafter "remembers" from extraction but didn't actually source? The
+  verifier can't find it in the KB → **FAIL**
+- Arithmetic the drafter computed with extended thinking? The petition verifier
+  **re-derives every number in plain Python** from the KB's raw figures → catches
+  floating-point and formula errors deterministically
+- A rubric item the drafter thought it satisfied? The verifier grades against the
+  rubric text alone, with no inherited confidence
+
+### The revision loop
+
+When verification fails, the verifier returns **structured feedback** (which
+specific items failed and why). The drafter receives this feedback and revises —
+but crucially, the *next* verification is again a fresh context. The verifier
+never learns to "expect" the drafter's style or trust its corrections.
+
+This loop runs autonomously until the petition passes all MUSTs, or a maximum
+attempt count is reached (currently 3). In practice, the most common failure is
+an arithmetic rounding error that the Python re-derivation catches on the first
+verification attempt.
+
+### Real-world validation
+
+This pattern has been tested on a real catastrophic injury case (not just the
+synthetic demo corpus). Real hospital discharge summaries, FIR scans, disability
+certificates, and salary documentation were processed through the same pipeline.
+The verifier caught a date discrepancy between the FIR and hospital admission
+record that a human paralegal had missed.
+
 ## How "done" is machine-checkable (orchestration)
 
 Another team can drop a different case's documents into `/data/` and rerun the
@@ -53,13 +108,29 @@ Offline, no API key required — proves the deterministic engine and the full
 event wiring (including inject → catch → revise):
 
 ```bash
-python -m scripts.selftest   # reconcile + invariants + precedent arithmetic
-python -m scripts.itest      # full pipeline + SSE event stream
+python -m scripts.selftest   # reconcile + invariants + precedent arithmetic (21 checks)
+python -m scripts.itest      # full pipeline + SSE event stream (12 checks)
 ```
 
 The KB verifier earned its keep during the build: it caught an I5 "silent
 overwrite" bug in the contradiction-collapse code and refused to commit a
 malformed KB — exactly as designed.
+
+## Claude Code dynamic workflow
+
+The repo includes Claude Code workflow and agent definitions:
+
+- **`.claude/workflows/verify-release.md`** — Fans out 5 parallel verification
+  agents (selftest, itest, rubric-auditor, deploy-checker, adversarial-verifier)
+  and synthesizes a release-readiness verdict
+- **`.claude/agents/adversarial-verifier.md`** — Independent petition checker
+  that hunts for untraceable facts and arithmetic errors
+- **`.claude/agents/rubric-auditor.md`** — Rubric compliance grader for KB
+  invariants and petition rubric items
+
+These demonstrate Claude Code orchestration: the workflow coordinates multiple
+independent agents, each with a focused task and clear pass/fail criteria,
+mirroring the fresh-context verification pattern used in the pipeline itself.
 
 ## Repeatability
 

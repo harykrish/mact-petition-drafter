@@ -1,0 +1,3606 @@
+
+╭─── Claude Code v2.1.34 ──────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting        │
+│                 Welcome back Hari!                 │ started                 │
+│                                                    │ Run /init to create a … │
+│                       ▐▛███▜▌                      │ ─────────────────────── │
+│                      ▝▜█████▛▘                     │ Recent activity         │
+│                        ▘▘ ▝▝                       │ No recent activity      │
+│                                                    │                         │
+│ Sonnet 4.5 · API Usage Billing · Hari‘s Individual │                         │
+│  Org                                               │                         │
+│                 ~/dev/ClaudeDevDay                 │                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Plan to implement                                                            │
+│                                                                              │
+│ Plan: Add Dynamic Workflows + Enhance Demo                                   │
+│                                                                              │
+│ Context                                                                      │
+│                                                                              │
+│ NyayaSetu is being submitted to the Claude Build Day hackathon. Scoring:     │
+│ Impact (35%), Demo (35%), Opus 4.8 Use (15%), Orchestration (15%). The       │
+│ project already has strong fundamentals (5-stage pipeline, fresh-context     │
+│ verifiers, revision loop, structured output, vision OCR). Two gaps: (1) no   │
+│ Claude Code dynamic workflows, which the hackathon explicitly highlights;    │
+│ (2) the UI doesn't visually communicate the orchestration sophistication to  │
+│ judges.                                                                      │
+│                                                                              │
+│ ---                                                                          │
+│ Part 1: Claude Code Dynamic Workflow — /verify-release                       │
+│                                                                              │
+│ Create a reusable Claude Code workflow that fans out 5 independent           │
+│ verification agents in parallel, then synthesizes a release-readiness        │
+│ verdict. This directly addresses the Orchestration criterion ("Is done       │
+│ verifiable by the model without a human?").                                  │
+│                                                                              │
+│ File: .claude/workflows/verify-release.md                                    │
+│                                                                              │
+│ A workflow prompt file that, when invoked, spawns 5 parallel agents:         │
+│ Agent: selftest                                                              │
+│ Task: python -m scripts.selftest                                             │
+│ Pass condition: Exit 0, "ALL CHECKS PASSED"                                  │
+│ ────────────────────────────────────────                                     │
+│ Agent: itest                                                                 │
+│ Task: python -m scripts.itest                                                │
+│ Pass condition: Exit 0, "ALL INTEGRATION CHECKS PASSED"                      │
+│ ────────────────────────────────────────                                     │
+│ Agent: rubric-auditor                                                        │
+│ Task: Read KB + petition against both rubric files, grade each MUST          │
+│ Pass condition: All MUSTs pass                                               │
+│ ────────────────────────────────────────                                     │
+│ Agent: deploy-checker                                                        │
+│ Task: Curl deployed URL endpoints (health, corpus, state, replay)            │
+│ Pass condition: All 200, artifacts non-null                                  │
+│ ────────────────────────────────────────                                     │
+│ Agent: adversarial-verifier                                                  │
+│ Task: Read petition + KB independently, find untraceable facts or arithmetic │
+│                                                                              │
+│   errors                                                                     │
+│ Pass condition: Zero violations                                              │
+│ Synthesis agent merges all 5 results into a PASS/FAIL report.                │
+│                                                                              │
+│ Also create: .claude/agents/ subagent definitions                            │
+│                                                                              │
+│ - .claude/agents/adversarial-verifier.md — Independent petition checker      │
+│ - .claude/agents/rubric-auditor.md — Rubric compliance grader                │
+│                                                                              │
+│ These are browsable by judges in the repo and usable standalone.             │
+│                                                                              │
+│ ---                                                                          │
+│ Part 2: UI Enhancements (all in static/index.html)                           │
+│                                                                              │
+│ 2a. Contradiction detection pulsing glow                                     │
+│                                                                              │
+│ Lines 113-114: Replace the single pop animation with pop + sustained pulsing │
+│  glow. Adds a @keyframes contradiction-glow that loops infinitely with a     │
+│ box-shadow pulse in amber. Makes contradictions unmissable during the demo   │
+│ video.                                                                       │
+│                                                                              │
+│ 2b. Richer status messages showing Opus orchestration                        │
+│                                                                              │
+│ Replay function (~lines 362-372) and live SSE handlers (~lines 380-384):     │
+│ Replace generic messages ("Ingesting...", "Drafting...") with Opus-aware     │
+│ messages:                                                                    │
+│ - "Extracting facts via structured output from FIR (3/9)"                    │
+│ - "Fresh-context KB verification against 10 invariants..."                   │
+│ - "Opus drafting petition from KB facts only (high effort, adaptive          │
+│ thinking)..."                                                                │
+│ - "Verifier rejected — feeding arithmetic failures back to drafter..."       │
+│                                                                              │
+│ 2c. Architecture diagram on Home page                                        │
+│                                                                              │
+│ After line 217 (after .wftiles div): Add a CSS-rendered horizontal flow      │
+│ diagram showing the 5 pipeline stages. The 2 verifier nodes get a green      │
+│ "Independent agent" badge and border, showing fresh-context separation. A    │
+│ dashed loop arrow connects Verify Petition back to Draft (revision loop). No │
+│  images — pure HTML/CSS.                                                     │
+│                                                                              │
+│ 2d. Orchestration stats in stat strip                                        │
+│                                                                              │
+│ Lines 349-354 (fillStats()): Add 2 more stat cards computed from trace data: │
+│ - "12+ calls — Opus 4.8 orchestrated" (9 extractions + 1 KB grade + 1 draft  │
+│ + 1 petition grade)                                                          │
+│ - "2 independent — fresh-context verifiers"                                  │
+│                                                                              │
+│ No backend changes needed — compute from existing trace/event data           │
+│ client-side.                                                                 │
+│                                                                              │
+│ ---                                                                          │
+│ Files to modify                                                              │
+│ File: static/index.html                                                      │
+│ Change: CSS: contradiction glow. JS: status messages, stats. HTML:           │
+│ architecture                                                                 │
+│    diagram                                                                   │
+│ ────────────────────────────────────────                                     │
+│ File: .claude/workflows/verify-release.md                                    │
+│ Change: NEW — workflow prompt                                                │
+│ ────────────────────────────────────────                                     │
+│ File: .claude/agents/adversarial-verifier.md                                 │
+│ Change: NEW — subagent definition                                            │
+│ ────────────────────────────────────────                                     │
+│ File: .claude/agents/rubric-auditor.md                                       │
+│ Change: NEW — subagent definition                                            │
+│ ---                                                                          │
+│ Verification                                                                 │
+│                                                                              │
+│ 1. Open http://localhost:8000 — Home page shows architecture diagram         │
+│ 2. Click Replay — status messages describe Opus calls, contradiction panel   │
+│ pulses, stats show call counts                                               │
+│ 3. Run /verify-release in Claude Code — 5 agents fan out, synthesis reports  │
+│ PASS                                                                         │
+│ 4. Check deployed site at mact-petition-drafter.onrender.com after push      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+⏺ I'll start by reading the current static/index.html and exploring the existing
+   project structure to understand what we're working with.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Bash(ls /Users/harikrishna/dev/ClaudeDevDay/.claude/ 2>/dev/null; echo "---";
+      ls /Users/harikrishna/dev/ClaudeDevDay/scripts/ 2>/dev/null; echo "---";
+      ls /Users/hari…)
+  ⎿  launch.json
+     settings.local.json
+     ---
+     … +29 lines (ctrl+o to expand)
+
+⏺ Now let me check the existing scripts and rubric files for context needed by
+  the agent definitions.
+
+⏺ Bash(ls /Users/harikrishna/dev/ClaudeDevDay/rubric/ 2>/dev/null && echo "---"
+      && ls /Users/harikrishna/dev/ClaudeDevDay/knowledge/ 2>/dev/null && echo
+      "---" && ls /U…)
+  ⎿  kb_invariants.md
+     petition_rubric.md
+     ---
+     … +7 lines (ctrl+o to expand)
+
+⏺ Read 2 files (ctrl+o to expand)
+
+⏺ Let me also read the rubric files and check the deployed URL for the
+  deploy-checker agent.
+
+⏺ Read 2 files (ctrl+o to expand)
+
+⏺ Now I have all the context I need. Let me create the task list and start
+  implementing.
+
+⏺ Let me start with the three new files (they're independent) and the CSS
+  change, all in parallel.
+
+⏺ Bash(mkdir -p /Users/harikrishna/dev/ClaudeDevDay/.claude/workflows
+      /Users/harikrishna/dev/ClaudeDevDay/.claude/agents)
+  ⎿  (No content)
+
+⏺ Write(.claude/workflows/verify-release.md)
+  ⎿  Wrote 104 lines to .claude/workflows/verify-release.md
+       1 # verify-release
+       2 
+       3 > Pre-release gate: fan out 5 independent verification agents in
+          parallel, then
+       4 > synthesize a single PASS / FAIL release-readiness verdict.
+       5 
+       6 Run all five checks below **in parallel** using the Task tool. E
+         ach agent runs
+       7 independently with no shared state. After all five complete, pro
+         duce a
+       8 synthesis report.
+       9 
+      10 ---
+     … +94 lines (ctrl+o to expand)
+
+⏺ Write(.claude/agents/adversarial-verifier.md)
+  ⎿  Wrote 77 lines to .claude/agents/adversarial-verifier.md
+      1 # Adversarial Verifier
+      2 
+      3 > Independent petition checker: reads the petition and KB with fr
+        esh eyes,
+      4 > hunts for untraceable facts and arithmetic errors.
+      5 
+      6 You are an adversarial verification agent. Your job is to find mi
+        stakes that
+      7 the drafter or primary verifier may have missed. You operate with
+         **zero trust**
+      8 in the petition text — every claim must be independently verified
+         against the
+      9 knowledge base.
+     … +67 lines (ctrl+o to expand)
+
+⏺ Write(.claude/agents/rubric-auditor.md)
+  ⎿  Wrote 90 lines to .claude/agents/rubric-auditor.md
+       1 # Rubric Auditor
+       2 
+       3 > Compliance grader: reads KB + petition against both rubric fil
+         es and grades
+       4 > every MUST item.
+       5 
+       6 You are a rubric compliance auditor. Your job is to systematical
+         ly evaluate the
+       7 project's artifacts against the formal rubrics. You grade each M
+         UST item with
+       8 evidence and produce a structured report.
+       9 
+      10 ## Inputs
+     … +80 lines (ctrl+o to expand)
+
+⏺ Now let me implement all the UI changes in static/index.html. I'll do them one
+   by one.
+
+  Task 4: Contradiction glow CSS
+
+⏺ Update(static/index.html)
+  ⎿  Added 2 lines, removed 1 line
+      110    .sdot.police{background:var(--police)} .sdot.medical{backgro
+           und:var(--medical)} .sdot.financial{background:var(--financial
+           )}
+      111    .flag{font-size:9.5px;padding:1px 6px;border-radius:5px;back
+           ground:var(--amber-bg);color:var(--amber);border:1px solid #ea
+           d9b0;margin-left:5px}
+      112    .cpanel{border:1px dashed var(--line);border-radius:var(--r-
+           sm);padding:15px;color:var(--muted);font-size:12.5px;text-alig
+           n:center}
+      113 -  .cpanel.hit{border:1px solid var(--disputed);background:var(
+          ---amber-bg);color:var(--ink);text-align:left;animation:pop .45
+          -s ease}                                                       
+      113 +  .cpanel.hit{border:1px solid var(--disputed);background:var(
+          +--amber-bg);color:var(--ink);text-align:left;animation:pop .45
+          +s ease, contradiction-glow 2s ease-in-out .45s infinite}      
+      114    @keyframes pop{0%{transform:scale(.97)}55%{transform:scale(1
+           .02)}100%{transform:scale(1)}}
+      115 +  @keyframes contradiction-glow{0%,100%{box-shadow:0 0 0 0 rgb
+          +a(165,92,36,.0)}50%{box-shadow:0 0 18px 4px rgba(165,92,36,.25
+          +)}}                                                           
+      116    .cd{margin-top:8px;padding:12px;border-radius:var(--r-sm);ba
+           ckground:var(--surface);border:1px solid #ead9b0}
+      117    .cd .cf{font-weight:600;color:var(--disputed);display:flex;a
+           lign-items:center;gap:7px} .cd .cv{font-size:12.5px;margin-top
+           :5px}
+      118    .timeline{list-style:none;margin:0;padding:0;font-size:12px;
+           max-height:560px;overflow:auto}
+
+⏺ Task 5: Richer Opus-aware status messages
+
+⏺ First, update the replay function status messages:
+
+⏺ Update(static/index.html)
+  ⎿  Added 2 lines, removed 1 line
+      361    setStage("ingest","active");setStage("reconcile","active");
+      362    const rev=[];let cl=0;
+      363    for(let i=0;i<TRACE.ingest.length;i++){const d=TRACE.ingest[
+           i];rev.push(d.source_doc);cl+=(d.extracted||0);
+      364 -    setStatus(`Ingesting ${i+1}/${TRACE.ingest.length}`,true);
+          -renderDocs(TRACE.ingest.slice(0,i+1));                        
+      364 +    const stype=d.source_type||d.source_doc.split("/").pop().r
+          +eplace(/\.\w+$/,"");                                          
+      365 +    setStatus(`Extracting facts via structured output from ${s
+          +type} (${i+1}/${TRACE.ingest.length})`,true);renderDocs(TRACE.
+          +ingest.slice(0,i+1));                                         
+      366      const part=partialRecord(TRACE.record,rev,cl);renderRecord
+           (part);
+      367      if(part.contradictions.length)$("#contradictions").classLi
+           st.add("hit");await sleep(760);}
+      368    renderRecord(TRACE.record);setStage("ingest","done");setStag
+           e("reconcile","done");
+
+⏺ Update(static/index.html)
+  ⎿  Added 1 line, removed 1 line
+      366      const part=partialRecord(TRACE.record,rev,cl);renderRecord
+           (part);
+      367      if(part.contradictions.length)$("#contradictions").classLi
+           st.add("hit");await sleep(760);}
+      368    renderRecord(TRACE.record);setStage("ingest","done");setStag
+           e("reconcile","done");
+      369 -  setStatus("Verifying the knowledge base…",true);setStage("ve
+          -rify_kb","active");await sleep(650);                          
+      369 +  setStatus("Fresh-context KB verification against 10 invarian
+          +ts\u2026",true);setStage("verify_kb","active");await sleep(650
+          +);                                                            
+      370    renderKbVerify(TRACE.kb_verify);setStage("verify_kb",TRACE.k
+           b_verify.committed?"done":"failed");await sleep(450);
+      371    const a=(TRACE.draft&&TRACE.draft.attempts)||[];
+      372    for(let k=0;k<a.length;k++){setStage("draft","active");setSt
+           atus(`Drafting (attempt ${k+1})…`,true);await sleep(650);rende
+           rAttempt(a[k]);
+
+⏺ Update(static/index.html)
+  ⎿  Added 2 lines, removed 2 lines
+      369    setStatus("Fresh-context KB verification against 10 invarian
+           ts\u2026",true);setStage("verify_kb","active");await sleep(650
+           );
+      370    renderKbVerify(TRACE.kb_verify);setStage("verify_kb",TRACE.k
+           b_verify.committed?"done":"failed");await sleep(450);
+      371    const a=(TRACE.draft&&TRACE.draft.attempts)||[];
+      372 -  for(let k=0;k<a.length;k++){setStage("draft","active");setSt
+          -atus(`Drafting (attempt ${k+1})…`,true);await sleep(650);rende
+          -rAttempt(a[k]);                                               
+      373 -    if(a[k].result==="pass"){setStage("draft","done");setStage
+          -("verify_petition","done");}else{setStage("verify_petition","f
+          -ailed");setStatus("Rejected — revising…",true);await sleep(800
+          -);}}                                                          
+      372 +  for(let k=0;k<a.length;k++){setStage("draft","active");setSt
+          +atus(k===0?"Opus drafting petition from KB facts only (extende
+          +d thinking)\u2026":`Revising petition (attempt ${k+1}) with ve
+          +rifier feedback\u2026`,true);await sleep(650);renderAttempt(a[
+          +k]);                                                          
+      373 +    if(a[k].result==="pass"){setStage("draft","done");setStage
+          +("verify_petition","done");}else{setStage("verify_petition","f
+          +ailed");setStatus("Verifier rejected \u2014 feeding arithmetic
+          + failures back to drafter\u2026",true);await sleep(800);}}    
+      374    setStatus(TRACE.draft&&TRACE.draft.passed?"Done · petition p
+           assed":"Finished",false);fillStats();busy=false;$("#replayBtn"
+           ).disabled=false;$("#liveBtn").disabled=false;
+      375  }
+      376  let es=null;
+
+⏺ Now update the live SSE handler messages:
+
+⏺ Update(static/index.html)
+  ⎿  Added 5 lines, removed 5 lines
+      379    ["#docs","#facts","#kbVerify","#petVerify","#petitionWrap"].
+           forEach(s=>$(s).innerHTML='<div class="empty">…</div>');$("#co
+           ntradictions").className="cpanel";$("#contradictions").innerHT
+           ML="Watching…";
+      380    setStatus("Starting live analysis…",true);
+      381    es=new EventSource(`/api/run-stream?inject_error=${$("#injec
+           tBox").checked?1:0}&use_llm=1`);
+      382 -  es.addEventListener("start",()=>{setStage("ingest","active")
+          -;setStatus("Ingesting…",true);});                             
+      383 -  es.addEventListener("ingest",e=>{const p=JSON.parse(e.data);
+          -dt.push(p.doc);renderDocs(dt);setStage("ingest","active");setS
+          -tage("reconcile","active");renderRecord(p.record);setStatus(`I
+          -ngested ${p.index+1}/${p.total}`,true);});                    
+      384 -  es.addEventListener("kb_verify",e=>{const p=JSON.parse(e.dat
+          -a);setStage("ingest","done");setStage("reconcile","done");rend
+          -erRecord(p.record);renderKbVerify(p.verdict.deterministic||p.v
+          -erdict);setStage("verify_kb",p.committed?"done":"failed");setS
+          -tatus(p.committed?"KB committed · drafting…":"KB failed",p.com
+          -mitted);if(p.committed)setStage("draft","active");});         
+      385 -  es.addEventListener("draft_attempt",e=>{const a=JSON.parse(e
+          -.data);renderAttempt(a);if(a.result==="pass"){setStage("draft"
+          -,"done");setStage("verify_petition","done");}else{setStage("ve
+          -rify_petition","failed");setStatus(`Rejected attempt ${a.attem
+          -pt} — revising…`,true);}});                                   
+      386 -  es.addEventListener("draft_done",e=>{const p=JSON.parse(e.da
+          -ta);setStage("draft",p.passed?"done":"failed");setStage("verif
+          -y_petition",p.passed?"done":"failed");setStatus(p.passed?`Peti
+          -tion passed (after ${p.revisions} revision(s))`:"Still failing
+          -",false);});                                                  
+      382 +  es.addEventListener("start",()=>{setStage("ingest","active")
+          +;setStatus("Opus extracting facts via structured output\u2026"
+          +,true);});                                                    
+      383 +  es.addEventListener("ingest",e=>{const p=JSON.parse(e.data);
+          +dt.push(p.doc);renderDocs(dt);setStage("ingest","active");setS
+          +tage("reconcile","active");renderRecord(p.record);const stype=
+          +p.doc.source_type||"document";setStatus(`Extracting facts via 
+          +structured output from ${stype} (${p.index+1}/${p.total})`,tru
+          +e);});                                                        
+      384 +  es.addEventListener("kb_verify",e=>{const p=JSON.parse(e.dat
+          +a);setStage("ingest","done");setStage("reconcile","done");rend
+          +erRecord(p.record);renderKbVerify(p.verdict.deterministic||p.v
+          +erdict);setStage("verify_kb",p.committed?"done":"failed");setS
+          +tatus(p.committed?"Fresh-context KB verified \u00b7 Opus draft
+          +ing petition (extended thinking)\u2026":"KB verification faile
+          +d \u2014 invariant violations detected",p.committed);if(p.comm
+          +itted)setStage("draft","active");});                          
+      385 +  es.addEventListener("draft_attempt",e=>{const a=JSON.parse(e
+          +.data);renderAttempt(a);if(a.result==="pass"){setStage("draft"
+          +,"done");setStage("verify_petition","done");}else{setStage("ve
+          +rify_petition","failed");setStatus(`Verifier rejected attempt 
+          +${a.attempt} \u2014 feeding failures back to drafter\u2026`,tr
+          +ue);}});                                                      
+      386 +  es.addEventListener("draft_done",e=>{const p=JSON.parse(e.da
+          +ta);setStage("draft",p.passed?"done":"failed");setStage("verif
+          +y_petition",p.passed?"done":"failed");setStatus(p.passed?`Peti
+          +tion passed \u2014 ${p.revisions} revision(s), all MUSTs verif
+          +ied`:"Still failing",false);});                               
+      387    es.addEventListener("done",()=>{es.close();busy=false;$("#re
+           playBtn").disabled=false;$("#liveBtn").disabled=false;});
+      388    es.addEventListener("error",e=>{let m="Stream error.";try{if
+           (e.data)m=JSON.parse(e.data).error||m;}catch(_){}setStatus(m,f
+           alse);busy=false;$("#replayBtn").disabled=false;$("#liveBtn").
+           disabled=false;if(es)es.close();});
+      389  }
+
+⏺ Task 6: Architecture diagram on Home page
+
+⏺ First add the CSS for the architecture diagram:
+
+⏺ Update(static/index.html)
+  ⎿  Added 16 lines
+      166    .realgrid{display:grid;grid-template-columns:repeat(auto-fit
+           ,minmax(150px,1fr));gap:14px;margin-top:16px}
+      167    .rstat{background:var(--surface);border:1px solid var(--line
+           );border-radius:var(--r);padding:17px}
+      168    .rstat .v{font-size:24px;font-weight:600;letter-spacing:-.5p
+           x} .rstat .l{font-size:12px;color:var(--muted);margin-top:4px}
+      169 +  /* architecture diagram */                                  
+      170 +  .archdiag{margin-top:32px;padding:24px 0 0}                 
+      171 +  .archdiag h2{font-size:12px;text-transform:uppercase;letter-
+          +spacing:1.2px;color:var(--muted);font-weight:600;margin:0 0 16
+          +px}                                                           
+      172 +  .arch-flow{display:flex;align-items:flex-start;gap:0;overflo
+          +w-x:auto;padding-bottom:8px;position:relative}                
+      173 +  .arch-node{flex:0 0 auto;display:flex;flex-direction:column;
+          +align-items:center;gap:6px;position:relative;min-width:110px} 
+      174 +  .arch-box{background:var(--surface);border:1px solid var(--l
+          +ine);border-radius:10px;padding:12px 14px;text-align:center;wi
+          +dth:108px;position:relative;transition:.2s}                   
+      175 +  .arch-box .ab-icon{font-size:18px;color:var(--ink-2);margin-
+          +bottom:4px}                                                   
+      176 +  .arch-box .ab-label{font-size:12px;font-weight:600;color:var
+          +(--ink);line-height:1.3}                                      
+      177 +  .arch-box .ab-sub{font-size:10px;color:var(--muted);margin-t
+          +op:2px;line-height:1.3}                                       
+      178 +  .arch-box.verifier{border-color:var(--pass);border-width:2px
+          +}                                                             
+      179 +  .arch-badge{font-size:9px;font-weight:600;color:var(--pass);
+          +background:var(--pass-bg);border:1px solid #cfe2d2;border-radi
+          +us:6px;padding:1px 7px;white-space:nowrap;margin-top:4px}     
+      180 +  .arch-arrow{flex:0 0 auto;display:flex;align-items:center;he
+          +ight:48px;color:var(--line);font-size:18px;padding:0 2px}     
+      181 +  .arch-arrow i{color:var(--muted)}                           
+      182 +  .arch-loop{position:absolute;bottom:-28px;left:0;right:0;dis
+          +play:flex;align-items:center;justify-content:center;gap:4px}  
+      183 +  .arch-loop-line{height:0;border-bottom:2px dashed var(--mute
+          +d);flex:1;max-width:200px}                                    
+      184 +  .arch-loop-label{font-size:9.5px;color:var(--muted);font-wei
+          +ght:500;white-space:nowrap}                                   
+      185    /* responsive: sidebar -> top */
+      186    @media(max-width:900px){
+      187      .app{flex-direction:column}
+
+⏺ Now add the HTML for the architecture diagram after the .wftiles div:
+
+⏺ Update(static/index.html)
+  ⎿  Added 33 lines
+      232            <button class="wftile" data-goto="evidence"><i class
+           ="ti ti-folder"></i><div><div class="wt">Browse the documents<
+           /div><div class="wp">Sources, precedents, checks</div></div></
+           button>
+      233            <button class="wftile" data-goto="petition"><i class
+           ="ti ti-file-text"></i><div><div class="wt">Open the petition<
+           /div><div class="wp">Drafted &amp; verified</div></div></butto
+           n>
+      234          </div>
+      235 +        <div class="archdiag">                                
+      236 +          <h2>How it works — 5-stage pipeline</h2>            
+      237 +          <div class="arch-flow">                             
+      238 +            <div class="arch-node">                           
+      239 +              <div class="arch-box"><div class="ab-icon"><i cl
+          +ass="ti ti-file-import"></i></div><div class="ab-label">Ingest
+          +</div><div class="ab-sub">Structured output extraction</div></
+          +div>                                                          
+      240 +            </div>                                            
+      241 +            <div class="arch-arrow"><i class="ti ti-chevron-ri
+          +ght"></i></div>                                               
+      242 +            <div class="arch-node">                           
+      243 +              <div class="arch-box"><div class="ab-icon"><i cl
+          +ass="ti ti-git-merge"></i></div><div class="ab-label">Reconcil
+          +e</div><div class="ab-sub">Cross-stream conflict detection</di
+          +v></div>                                                      
+      244 +            </div>                                            
+      245 +            <div class="arch-arrow"><i class="ti ti-chevron-ri
+          +ght"></i></div>                                               
+      246 +            <div class="arch-node">                           
+      247 +              <div class="arch-box verifier"><div class="ab-ic
+          +on"><i class="ti ti-shield-check"></i></div><div class="ab-lab
+          +el">Verify KB</div><div class="ab-sub">10 invariants checked</
+          +div></div>                                                    
+      248 +              <div class="arch-badge">Independent agent</div> 
+      249 +            </div>                                            
+      250 +            <div class="arch-arrow"><i class="ti ti-chevron-ri
+          +ght"></i></div>                                               
+      251 +            <div class="arch-node">                           
+      252 +              <div class="arch-box"><div class="ab-icon"><i cl
+          +ass="ti ti-writing"></i></div><div class="ab-label">Draft</div
+          +><div class="ab-sub">Opus extended thinking</div></div>       
+      253 +            </div>                                            
+      254 +            <div class="arch-arrow"><i class="ti ti-chevron-ri
+          +ght"></i></div>                                               
+      255 +            <div class="arch-node" style="position:relative"> 
+      256 +              <div class="arch-box verifier"><div class="ab-ic
+          +on"><i class="ti ti-checkup-list"></i></div><div class="ab-lab
+          +el">Verify Petition</div><div class="ab-sub">Arithmetic re-der
+          +ived</div></div>                                              
+      257 +              <div class="arch-badge">Independent agent</div> 
+      258 +            </div>                                            
+      259 +          </div>                                              
+      260 +          <div style="display:flex;justify-content:flex-end;pa
+          +dding-right:10px;margin-top:6px;position:relative">           
+      261 +            <div style="display:flex;align-items:center;gap:4p
+          +x;margin-right:54px">                                         
+      262 +              <i class="ti ti-arrow-back-up" style="font-size:
+          +14px;color:var(--muted)"></i>                                 
+      263 +              <span class="arch-loop-label">Revision loop on f
+          +ailure</span>                                                 
+      264 +              <span class="arch-loop-line"></span>            
+      265 +            </div>                                            
+      266 +          </div>                                              
+      267 +        </div>                                                
+      268        </div>
+      269      </section>
+      270  
+
+⏺ Task 7: Orchestration stats in stat strip
+
+⏺ Update(static/index.html)
+  ⎿  Added 2 lines, removed 1 line
+      400    const rec=TRACE?TRACE.record:null, nf=rec?activeFacts(rec).l
+           ength:"—", nc=rec?rec.contradictions.length:"—";
+      401    let loss=null;try{loss=TRACE.draft.attempts.slice(-1)[0].ari
+           thmetic.recomputed.loss_of_future_earning.amount;}catch(_){}
+      402    const ls=loss?("₹"+(loss>=1e7?(loss/1e7).toFixed(2)+" Cr":fm
+           t(loss))):"—";
+      403 -  const items=[["ti-clock","weeks → minutes","time to draft"],
+          -["ti-database",nf+" facts","reconciled · all sourced"],["ti-al
+          -ert-triangle",nc+" contradiction"+(nc==1?"":"s"),"caught auton
+          -omously"],["ti-calculator",ls,"loss verified"]];              
+      403 +  const nIngest=TRACE?TRACE.ingest.length:0;const nAttempts=TR
+          +ACE&&TRACE.draft?TRACE.draft.attempts.length:0;const opusCalls
+          +=nIngest+1+nAttempts+nAttempts;                               
+      404 +  const items=[["ti-clock","weeks \u2192 minutes","time to dra
+          +ft"],["ti-database",nf+" facts","reconciled \u00b7 all sourced
+          +"],["ti-alert-triangle",nc+" contradiction"+(nc==1?"":"s"),"ca
+          +ught autonomously"],["ti-calculator",ls,"loss verified"],["ti-
+          +cpu",opusCalls+"+ calls","Opus orchestrated"],["ti-shield-chec
+          +k","2 independent","fresh-context verifiers"]];               
+      405    $("#statstrip").innerHTML=items.map(([ic,v,l])=>`<div class=
+           "stat"><div class="v">${esc(v)}</div><div class="l"><i class="
+           ti ${ic}"></i> ${esc(l)}</div></div>`).join("");
+      406  }
+      407  function renderFinal(){if(!TRACE)return;renderDocs(TRACE.inges
+           t);renderRecord(TRACE.record);renderKbVerify(TRACE.kb_verify);
+           const a=(TRACE.draft&&TRACE.draft.attempts)||[];if(a.length)re
+           nderAttempt(a[a.length-1]);["ingest","reconcile","verify_kb","
+           draft","verify_petition"].forEach(k=>setStage(k,"done"));fillS
+           tats();}
+
+⏺ Now let me verify the final state of the file to make sure everything looks
+  correct.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Everything looks good. Let me verify the replay and SSE sections are correct
+  too.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ All changes look correct. Let me verify the new files are in place.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ All 7 tasks are completed. Here's a summary of everything implemented:
+
+  Part 1: Claude Code Dynamic Workflow
+
+  3 new files created:
+
+  - .claude/workflows/verify-release.md — Workflow that fans out 5 parallel
+  verification agents (selftest, itest, rubric-auditor, deploy-checker,
+  adversarial-verifier) and synthesizes a PASS/FAIL release-readiness verdict
+  - .claude/agents/adversarial-verifier.md — Independent petition checker that
+  hunts for untraceable facts, arithmetic errors, and
+  disputed-facts-asserted-as-settled
+  - .claude/agents/rubric-auditor.md — Compliance grader that evaluates KB
+  invariants (I1-I10) and petition rubric (M1-M13)
+
+  Part 2: UI Enhancements (all in static/index.html)
+
+  2a. Contradiction glow (line 113): Added contradiction-glow keyframes with
+  infinite amber box-shadow pulse that starts after the initial pop animation
+  completes.
+
+  2b. Richer status messages (replay ~lines 414-423, SSE ~lines 432-436):
+  - Replay: "Extracting facts via structured output from FIR (3/9)",
+  "Fresh-context KB verification against 10 invariants...", "Opus drafting
+  petition from KB facts only (extended thinking)...", "Verifier rejected --
+  feeding arithmetic failures back to drafter..."
+  - Live SSE: matching Opus-aware messages for start, ingest, kb_verify,
+  draft_attempt, and draft_done events
+
+  2c. Architecture diagram (lines 235-265): Pure HTML/CSS horizontal flow
+  showing 5 pipeline stages. Verify KB and Verify Petition nodes have green
+  borders + "Independent agent" badges. Revision loop indicator with dashed line
+   and back-arrow icon.
+
+  2d. Orchestration stats (lines 403-405): Two new stat cards dynamically
+  computed from trace data: opusCalls+ calls — Opus orchestrated and 2 
+  independent — fresh-context verifiers.
+
+✻ Brewed for 3m 52s
+
+❯ commit this 
+
+⏺ Bash(git status)
+  ⎿  On branch main
+     Your branch is up to date with 'origin/main'.
+     … +6 lines (ctrl+o to expand)
+
+⏺ Bash(git diff)
+  ⎿  diff --git a/static/index.html b/static/index.html
+     index 09e47a6..5ad8eec 100644
+     --- a/static/index.html
+     … +254 lines (ctrl+o to expand)
+
+⏺ Bash(git log --oneline -5)
+  ⎿ 41c3516 Rename product from Lexcompile to NyayaSetu
+    7e1d8b0 Harvey-style Home: assistant launcher with a central command bo
+    x + workflow shortcuts
+    … +5 lines (ctrl+o to expand)
+
+
+⏺ Bash(git -C /Users/harikrishna/dev/ClaudeDevDay add static/index.html
+      .claude/workflows/verify-release.md .claude/agents/adversarial-verifier.md
+       .claude/agents/rubri…)
+  ⎿  Error: Exit code 1
+     The following paths are ignored by one of your .gitignore files:
+     .claude
+     hint: Use -f if you really want to add them.
+     hint: Disable this message with "git config set advice.addIgnoredFile false
+
+
+⏺ The .claude directory is gitignored. Let me check the .gitignore and force-add
+   those files.
+
+⏺ Bash(git -C /Users/harikrishna/dev/ClaudeDevDay check-ignore .claude/
+      .claude/workflows/ .claude/agents/ .claude/workflows/verify-release.md)
+  ⎿  .claude/
+     .claude/workflows/
+     .claude/agents/
+     .claude/workflows/verify-release.md
+
+⏺ Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+⏺ The .claude/ directory is fully gitignored. Since the workflow and agent files
+   are meant to be browsable by judges in the repo, I need to exclude the
+  specific subdirectories from the ignore rule while keeping the rest of
+  .claude/ (settings, etc.) ignored.
+
+⏺ Update(.gitignore)
+  ⎿  Added 2 lines
+       4  .env
+       5  node_modules/
+       6  .claude/
+       7 +!.claude/workflows/                                            
+       8 +!.claude/agents/                                               
+       9  output/
+      10  .venv/
+      11  venv/
+
+⏺ Bash(git -C /Users/harikrishna/dev/ClaudeDevDay check-ignore
+      .claude/workflows/verify-release.md .claude/agents/adversarial-verifier.md
+       .claude/agents/rubric-auditor…)
+  ⎿  .claude/workflows/verify-release.md
+     .claude/agents/adversarial-verifier.md
+     .claude/agents/rubric-auditor.md
+
+⏺ The negation patterns aren't working because git ignores the parent directory
+  .claude/ first and never descends into it. I need to use a different approach
+  — negate .claude/ itself but ignore the specific files within it that
+  shouldn't be tracked.
+
+⏺ Update(.gitignore)
+  ⎿  Added 1 line, removed 1 line
+      3  __pycache__/
+      4  .env
+      5  node_modules/
+      6 -.claude/                                                        
+      6 +.claude/*                                                       
+      7  !.claude/workflows/
+      8  !.claude/agents/
+      9  output/
+
+⏺ Bash(git -C /Users/harikrishna/dev/ClaudeDevDay check-ignore
+      .claude/workflows/verify-release.md .claude/agents/adversarial-verifier.md
+       .claude/agents/rubric-auditor…)
+  ⎿  .claude/settings.local.json
+
+⏺ Now only .claude/settings.local.json (and other non-whitelisted files) are
+  ignored, while workflows/ and agents/ are tracked.
+
+⏺ Bash(git -C /Users/harikrishna/dev/ClaudeDevDay add .gitignore
+      static/index.html .claude/workflows/verify-release.md
+      .claude/agents/adversarial-verifier.md .claude/a…)
+  ⎿ [main 28acf95] Add /verify-release workflow, subagents, and UI enhancem
+    ents for hackathon demo
+     Committer: Hari Krishna <harikrishna@Haris-MacBook-Air.local>
+    … +16 lines (ctrl+o to expand)
+
+
+⏺ Bash(git -C /Users/harikrishna/dev/ClaudeDevDay status)
+  ⎿  On branch main
+     Your branch is ahead of 'origin/main' by 1 commit.
+       (use "git push" to publish your local commits)
+     … +2 lines (ctrl+o to expand)
+
+⏺ Committed as 28acf95. The working tree is clean. The branch is 1 commit ahead
+  of origin — push when you're ready.
+
+✻ Cogitated for 1m 1s
+
+❯ push it 
+
+⏺ Bash(git -C /Users/harikrishna/dev/ClaudeDevDay push)
+  ⎿  To https://github.com/harykrish/mact-petition-drafter.git
+        41c3516..28acf95  main -> main
+
+⏺ Pushed to origin/main.
+
+❯ run the selftest and itest to make sure everything passes 
+
+⏺ Bash(python -m scripts.selftest)
+  ⎿  Error: Exit code 127
+     (eval):1: command not found: python
+
+⏺ Bash(python -m scripts.itest)
+  ⎿  Error: Sibling tool call errored
+
+⏺ Bash(.venv/bin/python -m scripts.selftest)
+  ⎿  == reconciliation ==
+       PASS exactly one contradiction caught
+       PASS contradiction is cross-stream
+     … +29 lines (ctrl+o to expand)
+
+⏺ Bash(.venv/bin/python -m scripts.itest)
+  ⎿  == happy path ==
+       PASS 9 ingest events
+       PASS KB committed
+     … +14 lines (ctrl+o to expand)
+
+⏺ Both pass cleanly — 21/21 selftest checks and 12/12 integration checks.
+
+❯ Unknown skill: verify-release 
+
+❯ is it pushed to ?https://mact-petition-drafter.onrender.com/ 
+
+⏺ Two things here:
+
+  /verify-release workflow — Claude Code workflows aren't invoked as
+  slash-command skills. You run it by asking me directly, e.g. "run the
+  verify-release workflow". Want me to run it now?
+
+  Deployed site — let me check:
+
+⏺ Bash(curl -sf https://mact-petition-drafter.onrender.com/api/health)
+  ⎿  {
+       "api_key_present": true
+     }
+
+⏺ The server is live. But Render deploys on push — let me verify the latest
+  commit is reflected by checking the HTML for the architecture diagram we just
+  added:
+
+⏺ Fetch(https://mact-petition-drafter.onrender.com/)
+  ⎿  Received 43.3KB (200 OK)
+
+⏺ Yes — the latest commit is deployed and live at
+  https://mact-petition-drafter.onrender.com/. The architecture diagram,
+  contradiction glow, updated status messages, and orchestration stats are all
+  there.
+
+❯ ok cool - now lets submit it for the demo. Can we get a video? lets use   
+  elevenlabs to generate with a proper voice                                
+
+⏺ I can help write the narration script and generate the voiceover audio via the
+   ElevenLabs API, but I can't record your screen or stitch video. Here's what
+  I'd suggest:
+  ⎿ Tool use rejected with user message: The user wants to clarify these 
+    questions.
+        This means they may have additional information, context or questions 
+    for you.
+        Take their response into account and then reformulate the questions if 
+    appropriate.
+        Start by asking them what they would like to clarify.
+
+        Questions asked:
+    - "How do you want to create the demo video?"
+      (No answer provided)
+    - "Do you have an ElevenLabs API key available?"
+      (No answer provided)
+
+⏺ What would you like to clarify about the video approach or ElevenLabs setup?
+
+❯ lets get the video, slide etc as per the submission guidelines 
+
+⏺ Let me find the exact submission guidelines first.
+
+⏺ Web Search("Claude Build Day hackathon 2026 submission guidelines demo video
+            requirements")
+  ⎿  Did 1 search in 7s
+
+⏺ Fetch(https://www.adwaitx.com/claude-code-hackathon-opus-4-6/)
+  ⎿  Received 487.6KB (200 OK)
+
+⏺ Fetch(https://www.startupgrantsindia.com/competitions/built-with-opus-47-a-cla
+       ude-code-hackathon)
+  ⎿  Received 481.6KB (200 OK)
+
+❯ ## **Hackathon Rules**                                                    
+                                                                            
+  - **Open Source:** Project repositories **must be public**.               
+                                                                            
+  - **Team Size:** A **maximum of four** team members per team. Solo        
+  participants are allowed.                                                 
+                                                                            
+  - **Demo Requirements:** Your demo **must only highlight the specific     
+  features, code, and functionality that your team built during the         
+  hackathon**.                                                              
+                                                                            
+    - Judges must be able to clearly identify what was created during the   
+  event.                                                                    
+                                                                            
+    - Failure to clearly identify your original contributions will result   
+  in immediate disqualification.                                            
+                                                                            
+  - **Technologies & Projects:** You’re welcome to bring in prior projects  
+  to augment with the use of Claude during the hackathon.                   
+                                                                            
+  - **Own Work:** Failure to clearly distinguish your contributions will    
+  result in immediate disqualification.                                     
+                                                                            
+  - **Banned Projects:** Projects will be **disqualified** if they: violate 
+   legal, ethical, or platform policies, use code, data, or assets you do   
+  not have the rights to.                                                   
+                                                                            
+  ### Non-Competitive Projects:                                             
+                                                                            
+  - AI Mental Health Advisor                                                
+                                                                            
+  - Basic RAG Applications                                                  
+                                                                            
+  - Streamlit Applications                                                  
+                                                                            
+  - Image Analyzers                                                         
+                                                                            
+  - “AI for Education” Chatbot                                              
+                                                                            
+  - AI Job Application Screener                                             
+                                                                            
+  - AI Nutrition Coach                                                      
+                                                                            
+  - Personality Analyzers                                                   
+                                                                            
+  - Medical advice bots                                                     
+                                                                            
+  - Any project where a dashboard is the main feature                       
+                                                                            
+  - Sports analyzers or coaches                                             
+                                                                            
+  - Projects will be disqualified if they: violate legal, ethical, or       
+  platform policies, use code, data, or assets you do not have the rights   
+  to.                                                                       
+
+⏺ Web Search("Cerebral Valley Claude Code hackathon June 2026 submission
+            requirements demo video Devpost")
+  ⎿  Did 1 search in 5s
+
+⏺ Fetch(https://medium.com/@abandoned_train_station/claude-code-hackathon-the-ul
+       timate-guide-to-winning-b06eaf84ee84)
+  ⎿  Error: Request failed with status code 403
+
+❯ Teams should submit [**here**](https://cerebralvalley.ai/e/claude-startup 
+  s-build-day/hackathon/submit) at **5:00 PM sharp**. In the submission     
+  form, you will submit a short one minute demo video. This should be a     
+  video highlighting the specific features, code, and functionality that    
+  your team built during the hackathon.                                     
+                                                                            
+  [linkEmbed]                                                               
+                                                                            
+  *Please double check that your build repository is public, your demo link 
+   is accessible, and all team members have been added to the submission    
+  page.*                                                                    
+                                                                            
+  **A Note to Founders/Startups:**                                          
+                                                                            
+  We understand that some of you are building with existing products.       
+  You're welcome to extend what you may already have built, but the final   
+  submission to this hackathon must be an **open source public GitHub       
+  repository containing any and all code that you present in your demo** to 
+   allow our team and Anthropic's team to review.                           
+                                                                            
+  This means that your project must be a standalone product or tangential   
+  feature that can be extracted into a separate repository and shared with  
+  us. The GitHub links will be kept internal to our judging team and never  
+  shared publicly.                                                          
+                                                                            
+  ## **9️⃣ Judging Process**                                                 
+                                                                            
+  Judging will take place in two rounds.                                    
+                                                                            
+  **Round One:** Submissions will be reviewed asynchronously by the         
+  Anthropic team based on the materials submitted, including your demo      
+  video and GitHub repository. Finalist teams will be selected from this    
+  review.                                                                   
+                                                                            
+  **Round Two:** Top 6 teams will present on stage to a panel of judges &   
+  all attendees. Each team will have 3 minutes to live demo their project,  
+  followed by 1-2 minutes of Q&A. The same criteria as above will be used,  
+  though with equal weighting for each category.                            
+                                                                            
+  Round 2 presentation format: Presentations should be 3 minutes long       
+  showcasing what you built. Please use the following slide as your only    
+  slide (introducing your team). Link below 👇                              
+                                                                            
+  [linkEmbed]                                                               
+                                                                            
+  Any other slides are discouraged - we want to see what you built (code    
+  and product on screen), how you built it, and the problem you're solving. 
+   In your presentation, you should show how you directed Claude and how it 
+   verified its own work: walk us through what you gave the model (your     
+  brief, rubric, tests, or workflow scripts) and, if you can, the moment it 
+   caught and fixed a failure on its own.                                   
+
+⏺ Thanks for sharing the submission details. Now I have the full picture. Here's
+   what's needed:
+
+  Submission requirements:
+  1. 1-minute demo video — highlighting features/code/functionality built during
+   the hackathon
+  2. Public GitHub repo (already done)
+  3. Accessible demo link (already live at mact-petition-drafter.onrender.com)
+  4. Team members added to the submission page
+
+  Round 2 (if selected): 3-minute live demo, single intro slide only, show code
+  + product, show how you directed Claude and how it verified its own work.
+
+  Let me help you produce the video and the intro slide.
+
+⏺ User answered Claude's questions:
+  ⎿  · Do you have an ElevenLabs API key for the voiceover? → Yes, I'll 
+     paste it
+     · What are your team member names for the intro slide? → Solo — just me
+
+
+⏺ User declined to answer questions
+
+❯ Harikrishna Narayanan 
+
+⏺ Got it — Harikrishna Narayanan, solo. Please paste your ElevenLabs API key
+  when you're ready and I'll get started on the script + voiceover + intro
+  slide.
+
+❯ sk_54d8d0e8632f64ad3a03ee9b3420bba14409cbc71a3c2082 
+
+⏺ Let me list available voices and start on the script and slide in parallel.
+
+⏺ Bash(curl -s https://api.elevenlabs.io/v1/voices -H "xi-api-key:
+      sk_54d8d0e8632f64ad3a03ee9b3420bba14409cbc71a3c2082" | python3 -c "import
+      sys,json; d=json.load(sys.…)
+  ⎿  Error: Exit code 1
+     Traceback (most recent call last):
+       File "<string>", line 1, in <module>
+     KeyError: 'voices'
+
+⏺ Bash(curl -s https://api.elevenlabs.io/v1/voices -H "xi-api-key:
+      sk_54d8d0e8632f64ad3a03ee9b3420bba14409cbc71a3c2082" | python3 -c "import
+      sys,json; print(json.dumps…)
+  ⎿  {
+       "detail": {
+         "status": "missing_permissions",
+     … +4 lines (ctrl+o to expand)
+
+⏺ The key has limited permissions. Let me try the text-to-speech endpoint
+  directly — that often works even with restricted keys.
+
+⏺ Let me write the script and create the slide while I test the TTS endpoint.
+
+⏺ Write(demo/script.md)
+  ⎿  Wrote 28 lines to demo/script.md
+      1 # NyayaSetu — 1-Minute Demo Script
+      2 
+      3 ## Narration (~60 seconds)
+      4 
+      5 In India, drafting a Motor Accident compensation petition takes a
+         lawyer weeks — reconciling police reports, medical records, and 
+        financial documents by hand, then computing damages under Supreme
+         Court formulae.
+      6 
+      7 NyayaSetu does it in minutes. Nine documents go in. Opus extracts
+         facts from each using structured output, then a deterministic re
+        conciler catches cross-stream conflicts — like this accident date
+         mismatch between the FIR and the hospital record. Contradictions
+         are parked, never silently overwritten.
+      8 
+      9 A fresh-context verifier agent — with no memory of the extraction
+         — grades the knowledge base against ten invariants. Only if ever
+        y check passes does it commit.
+     … +18 lines (ctrl+o to expand)
+
+⏺ Write(demo/slide.html)
+  ⎿  Wrote 70 lines to demo/slide.html
+       1 <!doctype html>
+       2 <html lang="en">
+       3 <head>
+       4 <meta charset="utf-8"/>
+       5 <meta name="viewport" content="width=device-width, initial-scale
+         =1"/>
+       6 <title>NyayaSetu — Intro Slide</title>
+       7 <link rel="preconnect" href="https://fonts.googleapis.com"><link
+          rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+       8 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grot
+         esk:wght@400;500;600;700&display=swap" rel="stylesheet">
+       9 <style>
+      10   * { box-sizing: border-box; margin: 0; padding: 0; }
+     … +60 lines (ctrl+o to expand)
+
+⏺ Now let me generate the voiceover. I'll use a known voice ID (George — a
+  clear, professional male voice) since the voices list endpoint is restricted.
+
+⏺ Bash(cat <<'PYEOF' | python3
+      import urllib.request, json…)
+  ⎿  Error: Exit code 1
+     Traceback (most recent call last):
+       File "<stdin>", line 40, in <module>
+     ValueError: I/O operation on closed file
+
+⏺ Bash(python3 - <<'PYEOF'
+      import urllib.request, json…)
+  ⎿ SUCCESS: saved to /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover.mp
+    3 (1213797 bytes)
+
+  ⎿  (timeout 1m)
+
+⏺ Read 1 file (ctrl+o to expand)
+
+❯ there is another api key in case this doesnt work for elevenlabs 
+
+⏺ It worked — no need for the backup key. Here's what's ready in demo/:
+  File: demo/voiceover.mp3
+  What: 1.2 MB ElevenLabs voiceover (~60s narration)
+  ────────────────────────────────────────
+  File: demo/slide.html
+  What: Intro slide — open in browser, screenshot at 1920x1080
+  ────────────────────────────────────────
+  File: demo/script.md
+  What: Narration text + screen recording guide (what to click and when)
+  To record the video:
+  1. Open demo/slide.html in Chrome — screenshot or screen-record for 2-3
+  seconds
+  2. Open http://localhost:8000 (or the Render URL), start screen recording
+  3. Follow the timing guide in script.md — click Replay and let it build
+  4. Layer voiceover.mp3 over the screen recording in any video editor (iMovie,
+  QuickTime, etc.)
+
+  You can preview the voiceover now: open demo/voiceover.mp3
+
+  Want me to open the slide and audio for you?
+
+✻ Worked for 1m 53s
+
+❯ open demo/slide.html 
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/slide.html)
+  ⎿  (No content)
+
+⏺ Opened in your default browser. Screenshot it at 1920x1080 for the intro slide
+   frame in your video.
+
+❯ thats a very plain slide - whats there in the instructions? 
+
+⏺ The submission guidelines said:
+
+  "Please use the following slide as your only slide (introducing your team). 
+  Link below"
+
+  But the template link came through as [linkEmbed] — it didn't resolve. Do you
+  have the actual template link? If not, I can make this slide more polished —
+  the current one is intentionally minimal but I can add more visual weight to
+  it.
+
+❯ https://docs.google.com/presentation/d/1LS1yLBViZmF3on8LIPrfSiXIFKyMfwI2b 
+  UkIC5c7et0/edit?slide=id.g3eed5c6670d_0_712#slide=id.g3eed5c6670d_0_712   
+
+⏺ Fetch(https://docs.google.com/presentation/d/1LS1yLBViZmF3on8LIPrfSiXIFKyMfwI2
+       bUkIC5c7et0/export/pdf)
+  ⎿  Received 881 bytes (307 Temporary Redirect)
+
+⏺ Bash(curl -sL -o /Users/harikrishna/dev/ClaudeDevDay/demo/template.pdf
+      "https://docs.google.com/presentation/d/1LS1yLBViZmF3on8LIPrfSiXIFKyMfwI2b
+      UkIC5c7et0/export/pd…)
+  ⎿ -rw-r--r--  1 harikrishna  staff   260K Jun 13 15:25 /Users/harikrishna
+    /dev/ClaudeDevDay/demo/template.pdf
+
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Got it — dark background, monospace-style font, horizontal rule separators,
+  "Built with Claude" logo at bottom. Let me rebuild the slide to match this
+  template exactly.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Write(demo/slide.html)
+  ⎿  Added 86 lines, removed 41 lines
+        5  <meta name="viewport" content="width=device-width, initial-sca
+           le=1"/>
+        6  <title>NyayaSetu — Intro Slide</title>
+        7  <link rel="preconnect" href="https://fonts.googleapis.com"><li
+           nk rel="preconnect" href="https://fonts.gstatic.com" crossorig
+           in>
+        8 -<link href="https://fonts.googleapis.com/css2?family=Hanken+Gr
+          -otesk:wght@400;500;600;700&display=swap" rel="stylesheet">    
+        8 +<link href="https://fonts.googleapis.com/css2?family=Space+Gro
+          +tesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&displ
+          +ay=swap" rel="stylesheet">                                    
+        9  <style>
+       10    * { box-sizing: border-box; margin: 0; padding: 0; }
+       11    body {
+       12      width: 1920px; height: 1080px;
+       13 -    background: #F6F7F8;                                      
+       14 -    font-family: "Hanken Grotesk", system-ui, -apple-system, s
+          -ans-serif;                                                    
+       15 -    display: flex; align-items: center; justify-content: cente
+          -r;                                                            
+       13 +    background: #0a0a0a;                                      
+       14 +    background-image: radial-gradient(rgba(255,255,255,.03) 1p
+          +x, transparent 1px);                                          
+       15 +    background-size: 24px 24px;                               
+       16 +    font-family: "Space Grotesk", system-ui, sans-serif;      
+       17 +    color: #fff;                                              
+       18 +    display: flex; flex-direction: column;                    
+       19 +    justify-content: center;                                  
+       20 +    padding: 80px 100px;                                      
+       21      -webkit-font-smoothing: antialiased;
+       22    }
+       18 -  .card {                                                     
+       19 -    text-align: center;                                       
+       20 -    max-width: 900px;                                         
+       21 -  }                                                           
+       22 -  .icon {                                                     
+       23 -    font-size: 64px;                                          
+       24 -    margin-bottom: 24px;                                      
+       25 -  }                                                           
+       26 -  .title {                                                    
+       23 +  .team-name {                                                
+       24      font-size: 72px;
+       25      font-weight: 700;
+       29 -    letter-spacing: -1.5px;                                   
+       30 -    color: #15181C;                                           
+       31 -    margin-bottom: 12px;                                      
+       26 +    letter-spacing: -1px;                                     
+       27 +    margin-bottom: 48px;                                      
+       28    }
+       33 -  .tagline {                                                  
+       34 -    font-size: 28px;                                          
+       29 +  .members {                                                  
+       30 +    font-size: 32px;                                          
+       31      font-weight: 400;
+       36 -    color: #515862;                                           
+       37 -    line-height: 1.5;                                         
+       38 -    margin-bottom: 48px;                                      
+       32 +    color: rgba(255,255,255,.85);                             
+       33 +    margin-bottom: 56px;                                      
+       34    }
+       40 -  .divider {                                                  
+       41 -    width: 80px;                                              
+       42 -    height: 3px;                                              
+       43 -    background: #15181C;                                      
+       44 -    margin: 0 auto 48px;                                      
+       35 +  hr {                                                        
+       36 +    border: none;                                             
+       37 +    border-top: 1px solid rgba(255,255,255,.2);               
+       38 +    margin: 0;                                                
+       39    }
+       46 -  .builder {                                                  
+       40 +  .what {                                                     
+       41 +    font-family: "Space Mono", monospace;                     
+       42 +    font-size: 24px;                                          
+       43 +    font-weight: 400;                                         
+       44 +    color: rgba(255,255,255,.85);                             
+       45 +    padding: 32px 0;                                          
+       46 +  }                                                           
+       47 +  .how {                                                      
+       48 +    font-family: "Space Mono", monospace;                     
+       49 +    font-size: 24px;                                          
+       50 +    font-weight: 400;                                         
+       51 +    color: rgba(255,255,255,.85);                             
+       52 +    padding: 32px 0;                                          
+       53 +    line-height: 1.6;                                         
+       54 +  }                                                           
+       55 +  .bottom {                                                   
+       56 +    margin-top: auto;                                         
+       57 +  }                                                           
+       58 +  .built-with {                                               
+       59 +    font-family: "Space Mono", monospace;                     
+       60 +    font-size: 22px;                                          
+       61 +    font-weight: 700;                                         
+       62 +    color: rgba(255,255,255,.7);                              
+       63 +    display: flex;                                            
+       64 +    align-items: center;                                      
+       65 +    gap: 12px;                                                
+       66 +  }                                                           
+       67 +  .claude-mark {                                              
+       68 +    display: inline-flex;                                     
+       69 +    align-items: center;                                      
+       70 +    gap: 8px;                                                 
+       71 +  }                                                           
+       72 +  .claude-mark svg {                                          
+       73 +    width: 28px;                                              
+       74 +    height: 28px;                                             
+       75 +  }                                                           
+       76 +  .claude-mark span {                                         
+       77 +    font-family: "Space Grotesk", sans-serif;                 
+       78      font-size: 26px;
+       79      font-weight: 600;
+       49 -    color: #15181C;                                           
+       50 -    margin-bottom: 8px;                                       
+       80 +    color: #fff;                                              
+       81    }
+       52 -  .event {                                                    
+       53 -    font-size: 20px;                                          
+       54 -    color: #8A9098;                                           
+       55 -    font-weight: 500;                                         
+       56 -  }                                                           
+       82  </style>
+       83  </head>
+       84  <body>
+       60 -  <div class="card">                                          
+       61 -    <div class="icon">&#9878;&#65039;</div>                   
+       62 -    <div class="title">NyayaSetu</div>                        
+       63 -    <div class="tagline">AI-orchestrated Motor Accident petiti
+          -on drafting<br/>with independent verification agents</div>    
+       64 -    <div class="divider"></div>                               
+       65 -    <div class="builder">Harikrishna Narayanan</div>          
+       66 -    <div class="event">Claude Build Day 2026</div>            
+       85 +                                                              
+       86 +  <div class="team-name">NyayaSetu</div>                      
+       87 +                                                              
+       88 +  <div class="members">Harikrishna Narayanan</div>            
+       89 +                                                              
+       90 +  <hr/>                                                       
+       91 +                                                              
+       92 +  <div class="what">AI-orchestrated Motor Accident petition dr
+          +after with independent verification agents</div>              
+       93 +                                                              
+       94 +  <hr/>                                                       
+       95 +                                                              
+       96 +  <div class="how">5-stage Opus pipeline: structured extractio
+          +n, cross-stream reconciliation, fresh-context KB verification,
+          + extended-thinking drafting, arithmetic re-derivation with aut
+          +onomous revision loop</div>                                   
+       97 +                                                              
+       98 +  <hr/>                                                       
+       99 +                                                              
+      100 +  <div class="bottom">                                        
+      101 +    <div class="built-with">                                  
+      102 +      Built with                                              
+      103 +      <span class="claude-mark">                              
+      104 +        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www
+          +.w3.org/2000/svg">                                            
+      105 +          <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14
+          +.5L2 12L9.5 9.5L12 2Z" fill="#D97757"/>                       
+      106 +          <path d="M12 6L13.5 10.5L18 12L13.5 13.5L12 18L10.5 
+          +13.5L6 12L10.5 10.5L12 6Z" fill="#E8956A"/>                   
+      107 +        </svg>                                                
+      108 +        <span>Claude</span>                                   
+      109 +      </span>                                                 
+      110 +    </div>                                                    
+      111    </div>
+      112 +                                                              
+      113  </body>
+      114  </html>
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/slide.html)
+  ⎿  (No content)
+
+⏺ Rebuilt to match the template — dark background with dot grid texture, large
+  team name up top, member name, horizontal rules separating sections, monospace
+   font for the "what" and "how" fields, and "Built with Claude" with the
+  sparkle mark at the bottom. Take a look.
+
+✻ Baked for 39s
+
+❯ ok - now how to get the video going? 
+
+⏺ Here's the plan — you'll screen-record while the voiceover plays:
+
+  Setup:
+  1. Open demo/voiceover.mp3 in QuickTime (just for audio playback)
+  2. Open demo/slide.html in Chrome (full-screen it)
+  3. Open https://mact-petition-drafter.onrender.com in another Chrome tab
+
+  Record:
+  Use QuickTime Player > File > New Screen Recording (or Cmd+Shift+5 on Mac).
+  Record the full screen.
+
+  Sequence (follow along with the voiceover):
+  Time: 0:00
+  Action: Show the intro slide (stay 2-3s)
+  ────────────────────────────────────────
+  Time: ~0:03
+  Action: Switch to the NyayaSetu tab — Home page with architecture diagram
+    visible
+  ────────────────────────────────────────
+  Time: ~0:08
+  Action: Click the Replay button — documents start ingesting
+  ────────────────────────────────────────
+  Time: ~0:18
+  Action: Contradiction panel pulses — let it sit for a moment
+  ────────────────────────────────────────
+  Time: ~0:25
+  Action: KB verify PASS appears
+  ────────────────────────────────────────
+  Time: ~0:32
+  Action: Switch to the Petition tab — stat strip visible
+  ────────────────────────────────────────
+  Time: ~0:40
+  Action: Scroll down to the verifier arithmetic section
+  ────────────────────────────────────────
+  Time: ~0:55
+  Action: Stat strip shows "12+ calls" and "2 independent"
+  Tips:
+  - Play the voiceover audio through your speakers/headphones while recording,
+  then the screen recorder captures both
+  - Or easier: record screen silently, then combine in iMovie (drag the .mp3
+  onto the audio track)
+
+  Want me to open QuickTime and the voiceover for you?
+
+❯ cant you create the video yourself? 
+
+⏺ Bash(which ffmpeg && ffmpeg -version 2>&1 | head -1; echo "---"; which node &&
+       node -v; echo "---"; which npx; echo "---"; python3 -c "import
+      subprocess; print('play…)
+  ⎿  ffmpeg not found
+     ---
+     /opt/homebrew/bin/node
+     … +5 lines (ctrl+o to expand)
+
+⏺ No ffmpeg, but Node is available. Let me install what's needed and automate
+  the whole thing — use Puppeteer to drive the browser, screenshot each stage,
+  then stitch frames + voiceover into a video with ffmpeg.
+
+⏺ Bash(brew install ffmpeg 2>&1 | tail -3)
+  ⎿  Running in the background (↓ to manage)
+
+⏺ Bash(cd /Users/harikrishna/dev/ClaudeDevDay/demo && npm init -y 2>/dev/null &&
+       npm install puppeteer 2>&1 | tail -5)
+  ⎿  Running in the background (↓ to manage)
+
+⏺ While those install, let me write the video generation script. The approach:
+  Puppeteer opens the slide and the live site, takes timed screenshots during
+  the replay animation, then ffmpeg combines frames + voiceover into an mp4.
+
+⏺ Write(demo/record.mjs)
+  ⎿  Wrote 182 lines to demo/record.mjs
+       1 /**
+       2  * Automated demo video generator for NyayaSetu.
+       3  *
+       4  * Uses Puppeteer to screenshot the intro slide + live replay,
+       5  * then ffmpeg to stitch frames with the voiceover into an mp4.
+       6  *
+       7  * Usage: node demo/record.mjs [--url URL]
+       8  */
+       9 
+      10 import puppeteer from 'puppeteer';
+     … +172 lines (ctrl+o to expand)
+
+⏺ Task Output(non-blocking) b5c89e1
+  ⎿  Wrote to /Users/harikrishna/dev/ClaudeDevDay/demo/package.json:
+
+     {
+     … +12 lines (ctrl+o to expand)
+
+⏺ Task Output(non-blocking) bac8e55
+  ⎿  (No content)
+
+⏺ Both still installing. Let me wait for them to finish.
+
+⏺ Task Output b5c89e1
+  ⎿  Wrote to /Users/harikrishna/dev/ClaudeDevDay/demo/package.json:
+
+     {
+     … +19 lines (ctrl+o to expand)
+
+⏺ Puppeteer installed. Need to set the package type to module for the .mjs
+  import. Let me also wait for ffmpeg.
+
+⏺ Task Output bac8e55
+  ⎿ ==> Caveats
+    ==> ffmpeg
+    ffmpeg-full includes additional tools and libraries that are not includ
+    ed in the regular ffmpeg formula.
+
+
+⏺ Both ready. Let me run the video generator.
+
+⏺ Searched for 1 pattern (ctrl+o to expand)
+
+⏺ Bash(node demo/record.mjs 2>&1)
+  ⎿  Launching browser...
+     1/7  Intro slide...
+     2/7  Home page...
+     … +106 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/demo.mp4)
+  ⎿  (No content)
+
+⏺ Done. The video is at demo/demo.mp4 (2 MB, ~57 seconds) — intro slide, home
+  page with architecture diagram, replay animation showing
+  ingestion/contradictions/KB verification, petition tab with stats. The
+  ElevenLabs voiceover plays over the whole thing. Take a look and let me know
+  if you want any timing or content adjustments.
+
+✻ Cogitated for 3m 30s
+
+⏺ Background command "Install Puppeteer in demo dir" completed (exit code 0)
+
+⏺ Puppeteer install finished (we already used it to generate the video). The
+  demo video is playing — how does it look?
+
+⏺ Background command "Install ffmpeg via Homebrew" completed (exit code 0)
+
+⏺ Both background installs are done (ffmpeg and Puppeteer) — we already used
+  them to generate the video. It should be playing now. How does it look?
+
+❯ can you make the script better? and more powerful - also the voice of     
+  george is very robotic - how can we changed that?                         
+
+⏺ Let me rewrite the script to be punchier and more impactful, and try a better
+  voice. Let me check what voices sound more natural.
+
+⏺ Bash(python3 - <<'PYEOF'
+      import urllib.request, json…)
+  ⎿ OK  Daniel: 133373 bytes -> /Users/harikrishna/dev/ClaudeDevDay/demo/te
+    st_daniel.mp3
+    OK  Josh: 137970 bytes -> /Users/harikrishna/dev/ClaudeDevDay/demo/test
+    … +3 lines (ctrl+o to expand)
+
+
+  ⎿  (timeout 1m)
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/test_daniel.mp3 && sleep 5
+      && open /Users/harikrishna/dev/ClaudeDevDay/demo/test_josh.mp3 && sleep 5
+      && open /User…)
+  ⎿  (No content)
+  ⎿  (timeout 30s)
+
+⏺ Three samples are playing back-to-back:
+  1. Daniel — British, authoritative, polished
+  2. Josh — deep, warm, confident
+  3. Adam — deep, natural male
+
+  All using the higher-quality eleven_multilingual_v2 model with lower stability
+   (more expressive) and higher style. Listen and let me know which one you
+  prefer — meanwhile I'll rewrite the script.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Write(demo/script.md)
+  ⎿  Added 16 lines, removed 14 lines
+       2  
+       3  ## Narration (~60 seconds)
+       4  
+       5 -In India, drafting a Motor Accident compensation petition takes
+         - a lawyer weeks — reconciling police reports, medical records, 
+         -and financial documents by hand, then computing damages under S
+         -upreme Court formulae.                                         
+       5 +A catastrophic road accident. The victim's family needs a compe
+         +nsation petition — but drafting one means weeks of a lawyer rec
+         +onciling police FIRs, hospital records, and financial documents
+         +, then hand-computing damages under Supreme Court formulae. One
+         + wrong number, and the claim collapses.                        
+       6  
+       7 -NyayaSetu does it in minutes. Nine documents go in. Opus extrac
+         -ts facts from each using structured output, then a deterministi
+         -c reconciler catches cross-stream conflicts — like this acciden
+         -t date mismatch between the FIR and the hospital record. Contra
+         -dictions are parked, never silently overwritten.               
+       7 +NyayaSetu replaces that entire process. Watch.                 
+       8  
+       9 -A fresh-context verifier agent — with no memory of the extracti
+         -on — grades the knowledge base against ten invariants. Only if 
+         -every check passes does it commit.                             
+       9 +Nine documents go in. Claude extracts structured facts from eac
+         +h — names, dates, injuries, income — then a reconciler catches 
+         +conflicts across streams. See that? The FIR says March fifth. T
+         +he hospital says March sixth. That contradiction is flagged, no
+         +t buried.                                                      
+      10  
+      11 -Then Opus drafts the petition with extended thinking. A second 
+         -independent verifier re-derives every figure from scratch — los
+         -s of future earning, medical expenses, the grand total. If the 
+         -arithmetic is off by even one rupee, it rejects and feeds the f
+         -ailures back to the drafter. Watch — the verifier catches the e
+         -rror, and the revision loop fixes it autonomously.             
+      11 +Now here's where it gets interesting. A fresh-context verifier 
+         +— an agent with zero memory of the extraction — audits the know
+         +ledge base against ten invariants. It passes. Only then does th
+         +e system commit.                                               
+      12  
+      13 -Twelve-plus Opus calls. Two independent verification agents. On
+         -e petition, ready to file.                                     
+      13 +Claude drafts the full petition. But it doesn't stop there. A s
+         +econd independent agent re-derives every rupee from scratch. Lo
+         +ss of future earning: nine crore thirty-six lakhs. Medical expe
+         +nses: fifty lakhs. If a single figure is wrong, it rejects and 
+         +loops back — autonomously.                                     
+      14  
+      15 +Twelve orchestrated calls. Two independent verification agents.
+         + Zero human intervention. One petition — ready to file.        
+      16 +                                                               
+      17  ## Screen Recording Guide
+      18  
+      19  | Time | Screen | Narration cue |
+      20  |------|--------|---------------|
+      19 -| 0:00-0:03 | Intro slide (2s), then Home page | "In India, dra
+         -fting..." |                                                    
+      20 -| 0:03-0:08 | Home page — show architecture diagram | "Nine doc
+         -uments go in..." |                                             
+      21 -| 0:08-0:18 | Click Replay — watch documents ingest one by one 
+         -| "Opus extracts facts..." |                                   
+      22 -| 0:18-0:25 | Contradiction panel pulses amber | "...like this 
+         -accident date mismatch..." |                                   
+      23 -| 0:25-0:32 | KB verify section shows PASS | "A fresh-context v
+         -erifier agent..." |                                            
+      24 -| 0:32-0:40 | Switch to Petition tab — show stats strip | "Then
+         - Opus drafts..." |                                             
+      25 -| 0:40-0:50 | Scroll to verifier section — show arithmetic matc
+         -h/mismatch | "A second independent verifier..." |              
+      26 -| 0:50-0:55 | Show the revision loop (if inject-error was on) |
+         - "Watch — the verifier catches..." |                           
+      27 -| 0:55-1:00 | Stat strip showing "12+ calls, 2 independent" | "
+         -Twelve-plus Opus calls..." |                                   
+      21 +| 0:00-0:04 | Intro slide | "A catastrophic road accident..." |
+      22 +| 0:04-0:10 | Home page — architecture diagram visible | "Nyaya
+         +Setu replaces..." |                                            
+      23 +| 0:10-0:20 | Click Replay — documents ingest one by one | "Nin
+         +e documents go in..." |                                        
+      24 +| 0:20-0:27 | Contradiction panel pulses amber | "See that? The
+         + FIR says..." |                                                
+      25 +| 0:27-0:35 | KB verify section shows PASS | "A fresh-context v
+         +erifier..." |                                                  
+      26 +| 0:35-0:45 | Petition tab — stat strip + verifier arithmetic |
+         + "Claude drafts the full petition..." |                        
+      27 +| 0:45-0:52 | Scroll to arithmetic match/mismatch | "Loss of fu
+         +ture earning..." |                                             
+      28 +| 0:52-0:57 | Revision loop (injected error path) | "If a singl
+         +e figure is wrong..." |                                        
+      29 +| 0:57-1:00 | Stat strip: "12+ calls", "2 independent" | "Twelv
+         +e orchestrated calls..." |                                     
+
+⏺ Script rewritten. Tell me which voice you liked best — Daniel, Josh, or Adam —
+   and I'll generate the full voiceover and rebuild the video.
+
+✻ Sautéed for 1m 20s
+
+❯ can you use my voice and not this? or find a more energtic voice - i dont 
+   like this voice at all                                                   
+
+⏺ User answered Claude's questions:
+  ⎿  · Do you have a voice recording of yourself I can use to clone your 
+     voice in ElevenLabs? → Skip cloning, find an energetic voice
+
+⏺ Let me test some more energetic, dynamic voices with the new script.
+
+⏺ Bash(python3 - <<'PYEOF'
+      import urllib.request, json…)
+  ⎿  OK  Patrick: 345278 bytes
+     OK  Charlie: 362832 bytes
+     OK  Callum: 397105 bytes
+     … +4 lines (ctrl+o to expand)
+  ⎿  (timeout 1m)
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/test_patrick.mp3)
+  ⎿  (No content)
+
+⏺ Three samples ready. Playing Patrick first (energetic, young). Listen, then
+  I'll play the others:
+
+  - Patrick — energetic, punchy, startup-pitch energy
+  - Charlie — casual, upbeat Australian
+  - Callum — confident, transatlantic, polished
+
+  Let me play them spaced out so you can compare.
+
+⏺ Bash(sleep 12 && open
+      /Users/harikrishna/dev/ClaudeDevDay/demo/test_charlie.mp3 && sleep 12 &&
+      open /Users/harikrishna/dev/ClaudeDevDay/demo/test_callum.mp3)
+  ⎿  (No content)
+  ⎿  (timeout 30s)
+
+⏺ All three played. Which one do you like — Patrick, Charlie, or Callum? Or want
+   me to try more options?
+
+✻ Cooked for 1m 12s
+
+❯ can i listen to patrick again? 
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/test_patrick.mp3)
+  ⎿  (No content)
+
+⏺ Playing now.
+
+❯ ok lets start with Patrick - also can we work on the script now? 
+
+⏺ Sure. Here's the current script — let me know what you want to change:
+
+  ---
+  Current script (~60s):
+
+  A catastrophic road accident. The victim's family needs a compensation 
+  petition — but drafting one means weeks of a lawyer reconciling police FIRs, 
+  hospital records, and financial documents, then hand-computing damages under 
+  Supreme Court formulae. One wrong number, and the claim collapses.
+
+  NyayaSetu replaces that entire process. Watch.
+
+  Nine documents go in. Claude extracts structured facts from each — names, 
+  dates, injuries, income — then a reconciler catches conflicts across streams. 
+  See that? The FIR says March fifth. The hospital says March sixth. That 
+  contradiction is flagged, not buried.
+
+  Now here's where it gets interesting. A fresh-context verifier — an agent with
+   zero memory of the extraction — audits the knowledge base against ten 
+  invariants. It passes. Only then does the system commit.
+
+  Claude drafts the full petition. But it doesn't stop there. A second 
+  independent agent re-derives every rupee from scratch. Loss of future earning:
+   nine crore thirty-six lakhs. Medical expenses: fifty lakhs. If a single 
+  figure is wrong, it rejects and loops back — autonomously.
+
+  Twelve orchestrated calls. Two independent verification agents. Zero human 
+  intervention. One petition — ready to file.
+
+  ---
+  What would you like to adjust? Tone, length, emphasis, specific lines? Or do
+  you want to rewrite parts yourself and I'll incorporate them?
+
+❯ can you give a business justification? how many such cases are there and  
+  how this will accelerate and help actual people?                          
+
+⏺ Web Search("India motor accident claims tribunal MACT cases pending statistics
+             2025 2026")
+  ⎿  Did 1 search in 7s
+
+⏺ Web Search("India road accident deaths per year statistics 2024 2025
+            compensation claims filed")
+  ⎿  Did 1 search in 7s
+
+⏺ Powerful numbers. Here's the revised script with business impact woven in:
+
+⏺ Write(demo/script.md)
+  ⎿  Added 21 lines, removed 15 lines
+       2  
+       3  ## Narration (~60 seconds)
+       4  
+       5 -A catastrophic road accident. The victim's family needs a compe
+         -nsation petition — but drafting one means weeks of a lawyer rec
+         -onciling police FIRs, hospital records, and financial documents
+         -, then hand-computing damages under Supreme Court formulae. One
+         - wrong number, and the claim collapses.                        
+       5 +Every year, over one hundred and fifty thousand people die on I
+         +ndia's roads. Their families file for compensation — but ten la
+         +kh cases are stuck in tribunals right now, eighty thousand cror
+         +e rupees unpaid. Exposed why? Ninety percent of stalled claims 
+         +are blocked by documentation problems — missing facts, wrong ar
+         +ithmetic, unreconciled records. Lawyers take weeks to draft a s
+         +ingle petition.                                                
+       6  
+       7 -NyayaSetu replaces that entire process. Watch.                 
+       7 +NyayaSetu does it in minutes. Watch.                           
+       8  
+       9 -Nine documents go in. Claude extracts structured facts from eac
+         -h — names, dates, injuries, income — then a reconciler catches 
+         -conflicts across streams. See that? The FIR says March fifth. T
+         -he hospital says March sixth. That contradiction is flagged, no
+         -t buried.                                                      
+       9 +Nine documents go in — police FIRs, hospital records, income ce
+         +rtificates. Claude extracts structured facts from each, and a r
+         +econciler catches conflicts across sources. See that? The FIR s
+         +ays March fifth, the hospital says March sixth. That contradict
+         +ion gets flagged — never buried.                               
+      10  
+      11 -Now here's where it gets interesting. A fresh-context verifier 
+         -— an agent with zero memory of the extraction — audits the know
+         -ledge base against ten invariants. It passes. Only then does th
+         -e system commit.                                               
+      11 +A fresh-context verifier — an independent agent with no memory 
+         +of the extraction — audits the knowledge base against ten invar
+         +iants. Every check passes. Only then does the system commit.   
+      12  
+      13 -Claude drafts the full petition. But it doesn't stop there. A s
+         -econd independent agent re-derives every rupee from scratch. Lo
+         -ss of future earning: nine crore thirty-six lakhs. Medical expe
+         -nses: fifty lakhs. If a single figure is wrong, it rejects and 
+         -loops back — autonomously.                                     
+      13 +Claude drafts the full petition. A second independent agent re-
+         +derives every rupee from scratch. Nine crore thirty-six lakhs i
+         +n lost earnings. Fifty lakhs in medical costs. If a single figu
+         +re is wrong, it rejects and loops back autonomously.           
+      14  
+      15 -Twelve orchestrated calls. Two independent verification agents.
+         - Zero human intervention. One petition — ready to file.        
+      15 +Twelve orchestrated Claude calls. Two independent verification 
+         +agents. A petition that used to take weeks — done in minutes, v
+         +erified to the rupee.                                          
+      16  
+      17  ## Screen Recording Guide
+      18  
+      19  | Time | Screen | Narration cue |
+      20  |------|--------|---------------|
+      21 -| 0:00-0:04 | Intro slide | "A catastrophic road accident..." |
+      22 -| 0:04-0:10 | Home page — architecture diagram visible | "Nyaya
+         -Setu replaces..." |                                            
+      23 -| 0:10-0:20 | Click Replay — documents ingest one by one | "Nin
+         -e documents go in..." |                                        
+      24 -| 0:20-0:27 | Contradiction panel pulses amber | "See that? The
+         - FIR says..." |                                                
+      25 -| 0:27-0:35 | KB verify section shows PASS | "A fresh-context v
+         -erifier..." |                                                  
+      26 -| 0:35-0:45 | Petition tab — stat strip + verifier arithmetic |
+         - "Claude drafts the full petition..." |                        
+      27 -| 0:45-0:52 | Scroll to arithmetic match/mismatch | "Loss of fu
+         -ture earning..." |                                             
+      28 -| 0:52-0:57 | Revision loop (injected error path) | "If a singl
+         -e figure is wrong..." |                                        
+      29 -| 0:57-1:00 | Stat strip: "12+ calls", "2 independent" | "Twelv
+         -e orchestrated calls..." |                                     
+      21 +| 0:00-0:05 | Intro slide | "Every year, over one hundred..." |
+      22 +| 0:05-0:10 | Home page — architecture diagram | "NyayaSetu doe
+         +s it in minutes..." |                                          
+      23 +| 0:10-0:20 | Click Replay — documents ingest | "Nine documents
+         + go in..." |                                                   
+      24 +| 0:20-0:27 | Contradiction panel pulses | "See that? The FIR s
+         +ays..." |                                                      
+      25 +| 0:27-0:35 | KB verify PASS | "A fresh-context verifier..." | 
+      26 +| 0:35-0:45 | Petition tab — stats + verifier | "Claude drafts 
+         +the full petition..." |                                        
+      27 +| 0:45-0:52 | Arithmetic match section | "Nine crore thirty-six
+         + lakhs..." |                                                   
+      28 +| 0:52-0:57 | Revision loop | "If a single figure is wrong..." 
+         +|                                                              
+      29 +| 0:57-1:00 | Stat strip close-up | "Twelve orchestrated Claude
+         + calls..." |                                                   
+      30 +                                                               
+      31 +## Sources                                                     
+      32 +- [10.73 lakh pending MACT cases, Rs 96,257 crore](https://www.
+         +legacyias.com/motor-accident-compensation-crisis-mact/)        
+      33 +- [90% claims stalled by documentation issues](https://m.thewir
+         +e.in/article/government/for-indias-road-accident-survivors-lega
+         +l-compensation-is-elusive)                                     
+      34 +- [Rs 80,000 crore unpaid compensation](https://indialegallive.
+         +com/column-news/road-accident-victms-india-highest-fatalities-i
+         +n-world-rs-80000-crore-compensation-unpaid/)                   
+      35 +- [155,000+ annual road deaths](https://www.pib.gov.in/PressRel
+         +easePage.aspx?PRID=2036268)                                    
+
+⏺ Here's what changed:
+
+  - Opens with the human cost — 150K deaths/year, 10 lakh pending cases, Rs
+  80,000 crore unpaid
+  - Names the root cause — 90% of stalled claims are documentation problems
+  (this is exactly what NyayaSetu solves)
+  - Closes with the transformation — "weeks to minutes, verified to the rupee"
+
+  Want to adjust anything, or should I generate the voiceover with Patrick and
+  rebuild the video?
+
+✻ Sautéed for 47s
+
+❯ can we do the numbers in the US system - people dont understand lakh and  
+  crore etc                                                                 
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Update(demo/script.md)
+  ⎿  Added 4 lines, removed 4 lines
+       2  
+       3  ## Narration (~60 seconds)
+       4  
+       5 -Every year, over one hundred and fifty thousand people die on I
+         -ndia's roads. Their families file for compensation — but ten la
+         -kh cases are stuck in tribunals right now, eighty thousand cror
+         -e rupees unpaid. Exposed why? Ninety percent of stalled claims 
+         -are blocked by documentation problems — missing facts, wrong ar
+         -ithmetic, unreconciled records. Lawyers take weeks to draft a s
+         -ingle petition.                                                
+       5 +Every year, over a hundred and fifty thousand people die on Ind
+         +ia's roads. Their families file for compensation — but over a m
+         +illion cases are stuck in tribunals right now, ten billion doll
+         +ars unpaid. Why? Ninety percent of stalled claims are blocked b
+         +y documentation problems — missing facts, wrong arithmetic, unr
+         +econciled records. Lawyers take weeks to draft a single petitio
+         +n.                                                             
+       6  
+       7  NyayaSetu does it in minutes. Watch.
+       8  
+       9 -Nine documents go in — police FIRs, hospital records, income ce
+         -rtificates. Claude extracts structured facts from each, and a r
+         -econciler catches conflicts across sources. See that? The FIR s
+         -ays March fifth, the hospital says March sixth. That contradict
+         -ion gets flagged — never buried.                               
+       9 +Nine documents go in — police reports, hospital records, income
+         + certificates. Claude extracts structured facts from each, and 
+         +a reconciler catches conflicts across sources. See that? The po
+         +lice report says March fifth, the hospital says March sixth. Th
+         +at contradiction gets flagged — never buried.                  
+      10  
+      11  A fresh-context verifier — an independent agent with no memory 
+          of the extraction — audits the knowledge base against ten invar
+          iants. Every check passes. Only then does the system commit.
+      12  
+      13 -Claude drafts the full petition. A second independent agent re-
+         -derives every rupee from scratch. Nine crore thirty-six lakhs i
+         -n lost earnings. Fifty lakhs in medical costs. If a single figu
+         -re is wrong, it rejects and loops back autonomously.           
+      13 +Claude drafts the full petition. A second independent agent re-
+         +derives every dollar from scratch. Over a million dollars in lo
+         +st earnings. Sixty thousand in medical costs. If a single figur
+         +e is wrong, it rejects and loops back autonomously.            
+      14  
+      15 -Twelve orchestrated Claude calls. Two independent verification 
+         -agents. A petition that used to take weeks — done in minutes, v
+         -erified to the rupee.                                          
+      15 +Twelve orchestrated Claude calls. Two independent verification 
+         +agents. A petition that used to take weeks — done in minutes, v
+         +erified to the last cent.                                      
+      16  
+      17  ## Screen Recording Guide
+      18  
+
+⏺ Done. Conversions used:
+  - 10 lakh → over a million cases
+  - 80,000 crore → ten billion dollars (~$10B at current rates)
+  - 9.36 crore → over a million dollars (~$1.1M)
+  - 50 lakh → sixty thousand (~$60K)
+  - "verified to the rupee" → "verified to the last cent"
+
+  Want to tweak anything else, or should I generate the voiceover with Patrick
+  and rebuild the video?
+
+❯ this is based on a knowledge base with financial, medical and legal data  
+  which updates itself continuosuly and legal claims are only one of the    
+  spokes, this is also used for medical advocacy, rehab planning, AAC       
+  communication and even hospital record management - need to make the      
+  overall story about everthing and this is just one piece of it -          
+  thoughts?                                                                 
+
+⏺ That's a much bigger and more compelling story. The petition is just the demo
+  — the real product is a living knowledge base for catastrophic injury victims
+  that serves every stakeholder: the lawyer, the doctor, the rehab therapist,
+  the caregiver, and the patient themselves.
+
+  Here's how I'd restructure the 60-second narrative:
+
+  Hook (10s): A catastrophic accident doesn't just create a legal problem — it
+  creates a medical, financial, and communication crisis all at once. The family
+   is drowning in documents from hospitals, police, insurers, rehab centers.
+
+  Platform (10s): NyayaSetu builds a single, continuously updating knowledge
+  base from all of it — medical records, police reports, financial documents.
+  Every fact is sourced, every conflict flagged, every update tracked.
+
+  Spokes (15s): From that one knowledge base, multiple agents act. A legal agent
+   drafts the compensation petition. A medical advocacy agent tracks treatment
+  compliance. A rehab planner maps recovery milestones. An AAC agent gives voice
+   to patients who can't speak for themselves.
+
+  Demo (20s): Today we're showing the legal spoke — nine documents in, petition
+  out, every figure independently verified. (show the replay)
+
+  Close (5s): One knowledge base. Many agents. An AI advocate for the most
+  vulnerable.
+
+  Does that direction feel right? Or do you want to adjust the balance between
+  the big vision and the demo walkthrough? The risk with 60 seconds is trying to
+   cover too much — we could also keep the vision tight (10 seconds) and let the
+   demo do the talking.
+
+❯ lets try a balance between the two scripts? 
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Write(demo/script.md)
+  ⎿  Added 17 lines, removed 15 lines
+       2  
+       3  ## Narration (~60 seconds)
+       4  
+       5 -Every year, over a hundred and fifty thousand people die on Ind
+         -ia's roads. Their families file for compensation — but over a m
+         -illion cases are stuck in tribunals right now, ten billion doll
+         -ars unpaid. Why? Ninety percent of stalled claims are blocked b
+         -y documentation problems — missing facts, wrong arithmetic, unr
+         -econciled records. Lawyers take weeks to draft a single petitio
+         -n.                                                             
+       5 +A catastrophic road accident doesn't just create a legal proble
+         +m. It creates a medical crisis, a financial crisis, and a commu
+         +nication crisis — all at once. The family is buried in hospital
+         + records, police reports, insurance papers. Over a million of t
+         +hese cases are stuck in Indian tribunals right now. Ten billion
+         + dollars unpaid.                                               
+       6  
+       7 -NyayaSetu does it in minutes. Watch.                           
+       7 +NyayaSetu builds a living knowledge base from all of it. Every 
+         +fact sourced, every conflict flagged, every update tracked. Fro
+         +m that one KB, multiple agents act — legal drafting, medical ad
+         +vocacy, rehab planning, even AAC communication for patients who
+         +'ve lost the ability to speak.                                 
+       8  
+       9 -Nine documents go in — police reports, hospital records, income
+         - certificates. Claude extracts structured facts from each, and 
+         -a reconciler catches conflicts across sources. See that? The po
+         -lice report says March fifth, the hospital says March sixth. Th
+         -at contradiction gets flagged — never buried.                  
+       9 +Today, we're showing the legal agent. Watch.                   
+      10  
+      11 -A fresh-context verifier — an independent agent with no memory 
+         -of the extraction — audits the knowledge base against ten invar
+         -iants. Every check passes. Only then does the system commit.   
+      11 +Nine documents go in. Claude extracts structured facts, and a r
+         +econciler catches conflicts across sources. The police report s
+         +ays March fifth, the hospital says March sixth — that contradic
+         +tion gets flagged, never buried.                               
+      12  
+      13 -Claude drafts the full petition. A second independent agent re-
+         -derives every dollar from scratch. Over a million dollars in lo
+         -st earnings. Sixty thousand in medical costs. If a single figur
+         -e is wrong, it rejects and loops back autonomously.            
+      13 +An independent verifier — fresh context, no memory of the extra
+         +ction — audits the knowledge base against ten invariants. Only 
+         +when every check passes does the system commit.                
+      14  
+      15 -Twelve orchestrated Claude calls. Two independent verification 
+         -agents. A petition that used to take weeks — done in minutes, v
+         -erified to the last cent.                                      
+      15 +Claude drafts the petition. A second independent agent re-deriv
+         +es every figure from scratch. Over a million dollars in lost ea
+         +rnings. If a single number is wrong, it rejects and loops back 
+         +— autonomously.                                                
+      16  
+      17 +One knowledge base. Twelve orchestrated Claude calls. Two indep
+         +endent verification agents. From weeks to minutes.             
+      18 +                                                               
+      19  ## Screen Recording Guide
+      20  
+      21  | Time | Screen | Narration cue |
+      22  |------|--------|---------------|
+      21 -| 0:00-0:05 | Intro slide | "Every year, over one hundred..." |
+      22 -| 0:05-0:10 | Home page — architecture diagram | "NyayaSetu doe
+         -s it in minutes..." |                                          
+      23 -| 0:10-0:20 | Click Replay — documents ingest | "Nine documents
+         - go in..." |                                                   
+      24 -| 0:20-0:27 | Contradiction panel pulses | "See that? The FIR s
+         -ays..." |                                                      
+      25 -| 0:27-0:35 | KB verify PASS | "A fresh-context verifier..." | 
+      26 -| 0:35-0:45 | Petition tab — stats + verifier | "Claude drafts 
+         -the full petition..." |                                        
+      27 -| 0:45-0:52 | Arithmetic match section | "Nine crore thirty-six
+         - lakhs..." |                                                   
+      28 -| 0:52-0:57 | Revision loop | "If a single figure is wrong..." 
+         -|                                                              
+      29 -| 0:57-1:00 | Stat strip close-up | "Twelve orchestrated Claude
+         - calls..." |                                                   
+      23 +| 0:00-0:06 | Intro slide | "A catastrophic road accident..." |
+      24 +| 0:06-0:13 | Home page — architecture diagram | "NyayaSetu bui
+         +lds a living..." |                                             
+      25 +| 0:13-0:18 | Home page — workflow tiles | "...legal drafting, 
+         +medical advocacy..." |                                         
+      26 +| 0:18-0:28 | Click Replay — documents ingest | "Nine documents
+         + go in..." |                                                   
+      27 +| 0:28-0:34 | Contradiction panel pulses | "The police report s
+         +ays March fifth..." |                                          
+      28 +| 0:34-0:40 | KB verify PASS | "An independent verifier..." |  
+      29 +| 0:40-0:50 | Petition tab — stats + verifier | "Claude drafts 
+         +the petition..." |                                             
+      30 +| 0:50-0:55 | Arithmetic match section | "Over a million dollar
+         +s..." |                                                        
+      31 +| 0:55-1:00 | Stat strip close-up | "One knowledge base..." |  
+      32  
+      33  ## Sources
+      34  - [10.73 lakh pending MACT cases, Rs 96,257 crore](https://www.
+          legacyias.com/motor-accident-compensation-crisis-mact/)
+
+⏺ Here's the balance:
+
+  - Opening (13s): The full crisis — not just legal, but medical, financial,
+  communication. Stats land here.
+  - Platform vision (5s): Living KB → multiple agents (legal, medical advocacy,
+  rehab, AAC). One line — plants the bigger picture without dwelling on it.
+  - "Today, we're showing the legal agent. Watch." (2s): Clean pivot to the
+  demo.
+  - Demo walkthrough (35s): Ingestion, contradiction detection, independent KB
+  verification, petition drafting, arithmetic re-derivation, autonomous revision
+   loop.
+  - Close (5s): "One knowledge base. Twelve orchestrated Claude calls. Two
+  independent verification agents. From weeks to minutes."
+
+  Want to tweak any lines, or should I generate the voiceover with Patrick and
+  rebuild the video?
+
+❯ can you print out the full script? 
+
+⏺ A catastrophic road accident doesn't just create a legal problem. It creates a
+   medical crisis, a financial crisis, and a communication crisis — all at once.
+   The family is buried in hospital records, police reports, insurance papers. 
+  Over a million of these cases are stuck in Indian tribunals right now. Ten 
+  billion dollars unpaid.
+
+  NyayaSetu builds a living knowledge base from all of it. Every fact sourced, 
+  every conflict flagged, every update tracked. From that one KB, multiple 
+  agents act — legal drafting, medical advocacy, rehab planning, even AAC 
+  communication for patients who've lost the ability to speak.
+
+  Today, we're showing the legal agent. Watch.
+
+  Nine documents go in. Claude extracts structured facts, and a reconciler 
+  catches conflicts across sources. The police report says March fifth, the 
+  hospital says March sixth — that contradiction gets flagged, never buried.
+
+  An independent verifier — fresh context, no memory of the extraction — audits 
+  the knowledge base against ten invariants. Only when every check passes does 
+  the system commit.
+
+  Claude drafts the petition. A second independent agent re-derives every figure
+   from scratch. Over a million dollars in lost earnings. If a single number is 
+  wrong, it rejects and loops back — autonomously.
+
+  One knowledge base. Twelve orchestrated Claude calls. Two independent 
+  verification agents. From weeks to minutes.
+
+
+❯ add the conetxt in terms of numbers etc - where can we add that? 
+
+⏺ The stats are currently crammed into the opening. Let me spread them out so
+  they hit harder at the right moments:
+
+  A catastrophic road accident doesn't just create a legal problem. It creates a
+   medical crisis, a financial crisis, and a communication crisis — all at once.
+   In India alone, a hundred and fifty thousand people die on the roads every 
+  year. Their families are buried in hospital records, police reports, insurance
+   papers. Over a million compensation cases are stuck in tribunals right now — 
+  ten billion dollars unpaid. And ninety percent are stalled because of 
+  documentation problems. Missing facts, wrong arithmetic, unreconciled records.
+
+  NyayaSetu builds a living knowledge base from all of it. Every fact sourced, 
+  every conflict flagged, every update tracked. From that one KB, multiple 
+  agents act — legal drafting, medical advocacy, rehab planning, even AAC 
+  communication for patients who've lost the ability to speak.
+
+  Today, we're showing the legal agent. Watch.
+
+  Nine documents go in. Claude extracts structured facts, and a reconciler 
+  catches conflicts across sources. The police report says March fifth, the 
+  hospital says March sixth — that contradiction gets flagged, never buried. 
+  That alone would have stalled this case for months.
+
+  An independent verifier — fresh context, no memory of the extraction — audits 
+  the knowledge base against ten invariants. Only when every check passes does 
+  the system commit.
+
+  Claude drafts the petition. A second independent agent re-derives every figure
+   from scratch. Over a million dollars in lost earnings. If a single number is 
+  wrong, it rejects and loops back — autonomously.
+
+  One knowledge base. Twelve orchestrated Claude calls. Two independent 
+  verification agents. From weeks to minutes.
+
+  Changes:
+  - 150K deaths — moved up front as the emotional anchor
+  - 90% stalled by documentation — now its own beat, sets up exactly why this
+  tool matters
+  - "That alone would have stalled this case for months" — added after the
+  contradiction demo, connecting the stat to what they're seeing on screen
+
+  Does this feel right or do you want to move things around?
+
+❯ Claude drafts the petition. A second independent agent re-derives every   
+  figure from scratch. Over a million dollars in lost earnings. If a single 
+   number is wrong, it rejects and loops back —                             
+    autonomously. can we write this better?                                 
+
+⏺ How about:
+
+  Claude drafts the full petition. Then a second independent agent — with its 
+  own fresh context — re-derives every figure from the raw facts. Loss of future
+   earnings: over a million dollars. Medical costs: sixty thousand. Grand total 
+  cross-checked to the cent. Get any number wrong? The verifier catches it, 
+  feeds the error back, and the drafter fixes it — no human in the loop.
+
+  Or a tighter version:
+
+  Claude drafts the full petition. But here's the key — a second, completely 
+  independent agent re-computes every number from scratch. Over a million 
+  dollars in lost earnings. Sixty thousand in medical costs. Every head 
+  cross-verified. And if anything doesn't match — even by a dollar — it rejects,
+   explains why, and the drafter revises. Fully autonomous.
+
+  Which direction do you prefer, or want to mix and match?
+
+❯ yeah mix and match please 
+
+⏺ Claude drafts the full petition. Then a second, completely independent agent —
+   with its own fresh context — re-derives every figure from the raw facts. Over
+   a million dollars in lost earnings. Sixty thousand in medical costs. Every 
+  head cross-verified to the cent. If anything doesn't match, the verifier 
+  catches it, explains why, and the drafter revises — no human in the loop.
+
+  Want me to drop this into the full script and generate the voiceover?
+
+❯ add here's is the key 
+
+⏺ Claude drafts the full petition. But here's the key — a second, completely 
+  independent agent, with its own fresh context, re-derives every figure from 
+  the raw facts. Over a million dollars in lost earnings. Sixty thousand in 
+  medical costs. Every head cross-verified to the cent. If anything doesn't 
+  match, the verifier catches it, explains why, and the drafter revises — no 
+  human in the loop.
+
+  Good? Should I update the full script and generate the voiceover with Patrick?
+
+❯ yeah full script please - let me verify before generating the voiceover 
+
+⏺ A catastrophic road accident doesn't just create a legal problem. It creates a
+   medical crisis, a financial crisis, and a communication crisis — all at once.
+   In India alone, a hundred and fifty thousand people die on the roads every 
+  year. Their families are buried in hospital records, police reports, insurance
+   papers. Over a million compensation cases are stuck in tribunals right now — 
+  ten billion dollars unpaid. And ninety percent are stalled because of 
+  documentation problems. Missing facts, wrong arithmetic, unreconciled records.
+
+  NyayaSetu builds a living knowledge base from all of it. Every fact sourced, 
+  every conflict flagged, every update tracked. From that one KB, multiple 
+  agents act — legal drafting, medical advocacy, rehab planning, even AAC 
+  communication for patients who've lost the ability to speak.
+
+  Today, we're showing the legal agent. Watch.
+
+  Nine documents go in. Claude extracts structured facts, and a reconciler 
+  catches conflicts across sources. The police report says March fifth, the 
+  hospital says March sixth — that contradiction gets flagged, never buried. 
+  That alone would have stalled this case for months.
+
+  An independent verifier — fresh context, no memory of the extraction — audits 
+  the knowledge base against ten invariants. Only when every check passes does 
+  the system commit.
+
+  Claude drafts the full petition. But here's the key — a second, completely 
+  independent agent, with its own fresh context, re-derives every figure from 
+  the raw facts. Over a million dollars in lost earnings. Sixty thousand in 
+  medical costs. Every head cross-verified to the cent. If anything doesn't 
+  match, the verifier catches it, explains why, and the drafter revises — no 
+  human in the loop.
+
+  One knowledge base. Twelve orchestrated Claude calls. Two independent 
+  verification agents. From weeks to minutes.
+
+  Give me the go and I'll generate the voiceover with Patrick.
+
+❯ lets start with india alone, give the numbers and then start with         
+  catastropic etc - thoughts?                                               
+
+⏺ How about:
+
+  In India alone, a hundred and fifty thousand people die on the roads every 
+  year. Over a million compensation cases are stuck in tribunals — ten billion 
+  dollars unpaid. Ninety percent are stalled because of documentation problems. 
+  Missing facts, wrong arithmetic, unreconciled records.
+
+  Because a catastrophic road accident doesn't just create a legal problem. It 
+  creates a medical crisis, a financial crisis, and a communication crisis — all
+   at once. The family is buried in hospital records, police reports, insurance 
+  papers. Lawyers take weeks to draft a single petition.
+
+  NyayaSetu builds a living knowledge base from all of it. Every fact sourced, 
+  every conflict flagged, every update tracked. From that one KB, multiple 
+  agents act — legal drafting, medical advocacy, rehab planning, even AAC 
+  communication for patients who've lost the ability to speak.
+
+  Today, we're showing the legal agent. Watch.
+
+  Nine documents go in. Claude extracts structured facts, and a reconciler 
+  catches conflicts across sources. The police report says March fifth, the 
+  hospital says March sixth — that contradiction gets flagged, never buried. 
+  That alone would have stalled this case for months.
+
+  An independent verifier — fresh context, no memory of the extraction — audits 
+  the knowledge base against ten invariants. Only when every check passes does 
+  the system commit.
+
+  Claude drafts the full petition. But here's the key — a second, completely 
+  independent agent, with its own fresh context, re-derives every figure from 
+  the raw facts. Over a million dollars in lost earnings. Sixty thousand in 
+  medical costs. Every head cross-verified to the cent. If anything doesn't 
+  match, the verifier catches it, explains why, and the drafter revises — no 
+  human in the loop.
+
+  One knowledge base. Twelve orchestrated Claude calls. Two independent 
+  verification agents. From weeks to minutes.
+
+  Numbers hit first as cold facts, then "because" connects them to the human
+  story. Added "Lawyers take weeks to draft a single petition" to land the pain
+  point before introducing the solution. Good to go?
+
+❯ also add if there are many injuries - not just deaths - can we search for 
+   that number?                                                             
+
+⏺ Web Search("India road accident injuries per year statistics 2024 2025 total
+            injured")
+  ⎿  Did 1 search in 6s
+
+⏺ Good find — nearly half a million injuries per year on top of the deaths.
+  Updated opening:
+
+  In India alone, a hundred and fifty thousand people die on the roads every 
+  year. Half a million more are seriously injured. Over a million compensation 
+  cases are stuck in tribunals — ten billion dollars unpaid. Ninety percent are 
+  stalled because of documentation problems. Missing facts, wrong arithmetic, 
+  unreconciled records.
+
+  Because a catastrophic road accident doesn't just create a legal problem. It 
+  creates a medical crisis, a financial crisis, and a communication crisis — all
+   at once. The family is buried in hospital records, police reports, insurance 
+  papers. Lawyers take weeks to draft a single petition.
+
+  NyayaSetu builds a living knowledge base from all of it. Every fact sourced, 
+  every conflict flagged, every update tracked. From that one KB, multiple 
+  agents act — legal drafting, medical advocacy, rehab planning, even AAC 
+  communication for patients who've lost the ability to speak.
+
+  Today, we're showing the legal agent. Watch.
+
+  Nine documents go in. Claude extracts structured facts, and a reconciler 
+  catches conflicts across sources. The police report says March fifth, the 
+  hospital says March sixth — that contradiction gets flagged, never buried. 
+  That alone would have stalled this case for months.
+
+  An independent verifier — fresh context, no memory of the extraction — audits 
+  the knowledge base against ten invariants. Only when every check passes does 
+  the system commit.
+
+  Claude drafts the full petition. But here's the key — a second, completely 
+  independent agent, with its own fresh context, re-derives every figure from 
+  the raw facts. Over a million dollars in lost earnings. Sixty thousand in 
+  medical costs. Every head cross-verified to the cent. If anything doesn't 
+  match, the verifier catches it, explains why, and the drafter revises — no 
+  human in the loop.
+
+  One knowledge base. Twelve orchestrated Claude calls. Two independent 
+  verification agents. From weeks to minutes.
+
+  Ready to generate?
+
+❯ first line should be road accidents are sad or inevitable or something    
+  there?                                                                    
+
+⏺ How about one of these:
+
+  Option A — Stark fact:
+  Road accidents are inevitable. What's not inevitable is the suffering that 
+  comes after.
+
+  Option B — Direct:
+  Road accidents will always happen. But the crisis that follows doesn't have 
+  to.
+
+  Option C — Emotional:
+  You can't prevent every road accident. But you can prevent a family from being
+   destroyed twice — once by the crash, and again by the system meant to help 
+  them.
+
+  Which feels right, or want me to try a different angle?
+
+❯ or we can say - every second so many accidnets happen around the world -  
+  so some such                                                              
+
+⏺ Web Search("global road accident statistics per minute per second WHO 2024
+            2025")
+  ⎿  Did 1 search in 7s
+
+⏺ How about this opener:
+
+  Every twenty-four seconds, someone dies in a road accident. That's over a 
+  million lives a year — and fifty million more injured. In India alone, half a 
+  million people are hurt every year, and over a million compensation cases are 
+  stuck in tribunals. Ten billion dollars unpaid.
+
+  Drops a gut-punch stat right at the top, then zooms from global to India. Want
+   me to put together the full updated script?
+
+❯ yea pleas 
+
+⏺ Every twenty-four seconds, someone dies in a road accident. That's over a 
+  million lives a year — and fifty million more injured. In India alone, half a 
+  million people are hurt every year, and over a million compensation cases are 
+  stuck in tribunals. Ten billion dollars unpaid. Ninety percent are stalled 
+  because of documentation problems. Missing facts, wrong arithmetic, 
+  unreconciled records.
+
+  Because a catastrophic road accident doesn't just create a legal problem. It 
+  creates a medical crisis, a financial crisis, and a communication crisis — all
+   at once. The family is buried in hospital records, police reports, insurance 
+  papers. Lawyers take weeks to draft a single petition.
+
+  NyayaSetu builds a living knowledge base from all of it. Every fact sourced, 
+  every conflict flagged, every update tracked. From that one KB, multiple 
+  agents act — legal drafting, medical advocacy, rehab planning, even AAC 
+  communication for patients who've lost the ability to speak.
+
+  Today, we're showing the legal agent. Watch.
+
+  Nine documents go in. Claude extracts structured facts, and a reconciler 
+  catches conflicts across sources. The police report says March fifth, the 
+  hospital says March sixth — that contradiction gets flagged, never buried. 
+  That alone would have stalled this case for months.
+
+  An independent verifier — fresh context, no memory of the extraction — audits 
+  the knowledge base against ten invariants. Only when every check passes does 
+  the system commit.
+
+  Claude drafts the full petition. But here's the key — a second, completely 
+  independent agent, with its own fresh context, re-derives every figure from 
+  the raw facts. Over a million dollars in lost earnings. Sixty thousand in 
+  medical costs. Every head cross-verified to the cent. If anything doesn't 
+  match, the verifier catches it, explains why, and the drafter revises — no 
+  human in the loop.
+
+  One knowledge base. Twelve orchestrated Claude calls. Two independent 
+  verification agents. From weeks to minutes.
+
+  Ready to generate with Patrick?
+
+❯ Every twenty-four seconds, someone dies in a road accident. That's over a 
+   million lives a year — and fifty million more injured. a catastrophic    
+  road accident doesn't just create a legal problem. It creates a medical   
+  crisis, a financial crisis, and a communication crisis — all at once. The 
+   family is buried in                                                      
+    hospital records, police reports, insurance papers. Lawyers take weeks  
+  to draft a single petition. In India alone, half a million people are     
+  hurt every year, and over                                                 
+     a million compensation cases are stuck in tribunals. Ten billion       
+  dollars unpaid. Ninety percent are stalled because of documentation       
+  problems. Missing facts, wrong arithmetic, unreconciled                   
+    records.NyayaSetu builds a living knowledge base from all of it. Every  
+  fact sourced, every conflict flagged, every update tracked. From that one 
+   KB, multiple agents act — legal drafting, medical advocacy,              
+     rehab planning, even AAC communication for patients who've lost the    
+  ability to speak. something like this?                                    
+
+⏺ Good call — the human story comes right after the hook instead of being
+  separated. Let me clean it up:
+
+  Every twenty-four seconds, someone dies in a road accident. That's over a 
+  million lives a year — and fifty million more injured. A catastrophic road 
+  accident doesn't just create a legal problem. It creates a medical crisis, a 
+  financial crisis, and a communication crisis — all at once. The family is 
+  buried in hospital records, police reports, insurance papers. Lawyers take 
+  weeks to draft a single petition. In India alone, half a million people are 
+  hurt every year, and over a million compensation cases are stuck in tribunals.
+   Ten billion dollars unpaid. Ninety percent stalled because of documentation 
+  problems — missing facts, wrong arithmetic, unreconciled records.
+
+  NyayaSetu builds a living knowledge base from all of it. Every fact sourced, 
+  every conflict flagged, every update tracked. From that one KB, multiple 
+  agents act — legal drafting, medical advocacy, rehab planning, even AAC 
+  communication for patients who've lost the ability to speak.
+
+  Today, we're showing the legal agent. Watch.
+
+  Nine documents go in. Claude extracts structured facts, and a reconciler 
+  catches conflicts across sources. The police report says March fifth, the 
+  hospital says March sixth — that contradiction gets flagged, never buried. 
+  That alone would have stalled this case for months.
+
+  An independent verifier — fresh context, no memory of the extraction — audits 
+  the knowledge base against ten invariants. Only when every check passes does 
+  the system commit.
+
+  Claude drafts the full petition. But here's the key — a second, completely 
+  independent agent, with its own fresh context, re-derives every figure from 
+  the raw facts. Over a million dollars in lost earnings. Sixty thousand in 
+  medical costs. Every head cross-verified to the cent. If anything doesn't 
+  match, the verifier catches it, explains why, and the drafter revises — no 
+  human in the loop.
+
+  One knowledge base. Twelve orchestrated Claude calls. Two independent 
+  verification agents. From weeks to minutes.
+
+  This might run a bit over 60 seconds with Patrick's pacing. Want me to
+  generate it and we can see, or trim something first?
+
+❯ familes have to deal with this when they are already deling with the      
+  trauma of seeing a loved one die or even worse suffer                     
+
+⏺ Powerful addition. Updated flow:
+
+  Every twenty-four seconds, someone dies in a road accident. That's over a 
+  million lives a year — and fifty million more injured. A catastrophic accident
+   doesn't just create a legal problem. It creates a medical crisis, a financial
+   crisis, and a communication crisis — all at once. And families have to 
+  navigate all of this while they're already dealing with the trauma of losing a
+   loved one — or even worse, watching them suffer.
+
+  Hospital records, police reports, insurance papers. In India alone, over a 
+  million compensation cases are stuck in tribunals. Ten billion dollars unpaid.
+   Ninety percent stalled because of documentation problems — missing facts, 
+  wrong arithmetic, unreconciled records. Lawyers take weeks to draft a single 
+  petition.
+
+  NyayaSetu builds a living knowledge base from all of it. Every fact sourced, 
+  every conflict flagged, every update tracked. From that one KB, multiple 
+  agents act — legal drafting, medical advocacy, rehab planning, even AAC 
+  communication for patients who've lost the ability to speak.
+
+  Today, we're showing the legal agent. Watch.
+
+  Nine documents go in. Claude extracts structured facts, and a reconciler 
+  catches conflicts across sources. The police report says March fifth, the 
+  hospital says March sixth — that contradiction gets flagged, never buried. 
+  That alone would have stalled this case for months.
+
+  An independent verifier — fresh context, no memory of the extraction — audits 
+  the knowledge base against ten invariants. Only when every check passes does 
+  the system commit.
+
+  Claude drafts the full petition. But here's the key — a second, completely 
+  independent agent, with its own fresh context, re-derives every figure from 
+  the raw facts. Over a million dollars in lost earnings. Sixty thousand in 
+  medical costs. Every head cross-verified to the cent. If anything doesn't 
+  match, the verifier catches it, explains why, and the drafter revises — no 
+  human in the loop.
+
+  One knowledge base. Twelve orchestrated Claude calls. Two independent 
+  verification agents. From weeks to minutes.
+
+  The trauma line lands right after the crisis list — hits hard before pivoting
+  to the systemic problem. Generate with Patrick?
+
+❯ cool - how long does it take? if its slightly more than a min - thats ok  
+  I think?                                                                  
+
+⏺ Bash(python3 -c "
+      script = '''Every twenty-four seconds, someone dies in a road accident.
+      That's over a million lives a year — and fifty million more injured. A
+      cata…)
+  ⎿  Word count: 319
+     At 150 wpm (energetic): 2.1 min (128s)
+     At 130 wpm (measured):  2.5 min (147s)
+
+⏺ It'll land around 2 minutes with Patrick's energetic pacing. That's over the
+  1-minute target but the submission guidelines said "short one minute demo
+  video" — so roughly double.
+
+  Options:
+  1. Keep it as-is — ~2 min is still short, and the content is strong
+  2. Trim to ~90 seconds — cut a few lines from the demo walkthrough section
+  3. Trim to ~60 seconds — would need to cut significantly
+
+  Since you said slightly over a minute is fine, I'd say generate it and see
+  exactly how long Patrick makes it. Want me to go ahead?
+
+❯ can we speed up Patrick's voice? 
+
+⏺ Yes — I can either speed it up in ElevenLabs (faster speech rate) or use
+  ffmpeg to speed up the audio after generation. Let me do both: generate with a
+   faster ElevenLabs setting, and if that's not enough I can speed it up further
+   with ffmpeg.
+
+⏺ Bash(python3 - <<'PYEOF'
+      import urllib.request, json…)
+  ⎿ OK: 1874173 bytes -> /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover
+    _fast.mp3
+
+  ⎿  (timeout 1m 30s)
+
+⏺ Bash(ffprobe -v error -show_entries format=duration -of
+      default=noprint_wrappers=1:nokey=1
+      /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_fast.mp3)
+  ⎿  117.075011
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_fast.mp3)
+  ⎿  (No content)
+
+⏺ Playing now. It's 1 minute 57 seconds at 1.15x speed. If you want it closer to
+   90 seconds, I can bump it to 1.3x using ffmpeg without distorting the voice.
+  Let me know how it sounds.
+
+✻ Baked for 51s
+
+❯ yes lets do that 
+
+⏺ Bash(ffmpeg -y -i /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_fast.mp3
+      -filter:a "atempo=1.13"
+      /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_final.mp3 2>…)
+  ⎿       encoder         : Lavc62.28.101 libmp3lame
+    size=     512KiB time=00:01:31.95 bitrate=  45.6kbits/s speed= 182x ela
+    psed=0:00:00.50    [out#0/mp3 @ 0x91b020180] video:0KiB audio:810KiB s
+    … +4 lines (ctrl+o to expand)
+
+
+⏺ Bash(ffprobe -v error -show_entries format=duration -of
+      default=noprint_wrappers=1:nokey=1
+      /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_final.mp3)
+  ⎿  103.614195
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_final.mp3)
+  ⎿  (No content)
+
+⏺ Playing now. 1 minute 44 seconds — that's 1.3x total speed. Should still sound
+   natural without chipmunk distortion. How does it sound?
+
+❯ would 1.4x be too distorted? 
+
+⏺ Bash(ffmpeg -y -i /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_fast.mp3
+      -filter:a "atempo=1.22"
+      /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_1.4x.mp3 2>&…)
+  ⎿       encoder         : Lavc62.28.101 libmp3lame
+    size=     512KiB time=00:01:31.58 bitrate=  45.8kbits/s speed= 183x ela
+    psed=0:00:00.50    [out#0/mp3 @ 0x827040180] video:0KiB audio:750KiB s
+    … +4 lines (ctrl+o to expand)
+
+
+⏺ Bash(ffprobe -v error -show_entries format=duration -of
+      default=noprint_wrappers=1:nokey=1
+      /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_1.4x.mp3 && open
+      /Users…)
+  ⎿  95.972925
+
+⏺ Playing now. 96 seconds — just over 1.5 minutes. Listen and compare. If it
+  sounds off we'll stick with the 1.3x version.
+
+❯ can i get the full script now 
+
+⏺ Every twenty-four seconds, someone dies in a road accident. That's over a 
+  million lives a year — and fifty million more injured. A catastrophic accident
+   doesn't just create a legal problem. It creates a medical crisis, a financial
+   crisis, and a communication crisis — all at once. And families have to 
+  navigate all of this while they're already dealing with the trauma of losing a
+   loved one — or even worse, watching them suffer.
+
+  Hospital records, police reports, insurance papers. In India alone, over a 
+  million compensation cases are stuck in tribunals. Ten billion dollars unpaid.
+   Ninety percent stalled because of documentation problems — missing facts, 
+  wrong arithmetic, unreconciled records. Lawyers take weeks to draft a single 
+  petition.
+
+  NyayaSetu builds a living knowledge base from all of it. Every fact sourced, 
+  every conflict flagged, every update tracked. From that one KB, multiple 
+  agents act — legal drafting, medical advocacy, rehab planning, even AAC 
+  communication for patients who've lost the ability to speak.
+
+  Today, we're showing the legal agent. Watch.
+
+  Nine documents go in. Claude extracts structured facts, and a reconciler 
+  catches conflicts across sources. The police report says March fifth, the 
+  hospital says March sixth — that contradiction gets flagged, never buried. 
+  That alone would have stalled this case for months.
+
+  An independent verifier — fresh context, no memory of the extraction — audits 
+  the knowledge base against ten invariants. Only when every check passes does 
+  the system commit.
+
+  Claude drafts the full petition. But here's the key — a second, completely 
+  independent agent, with its own fresh context, re-derives every figure from 
+  the raw facts. Over a million dollars in lost earnings. Sixty thousand in 
+  medical costs. Every head cross-verified to the cent. If anything doesn't 
+  match, the verifier catches it, explains why, and the drafter revises — no 
+  human in the loop.
+
+  One knowledge base. Twelve orchestrated Claude calls. Two independent 
+  verification agents. From weeks to minutes.
+
+
+❯ lets edit it a bit more - hwo can we shorten this Every twenty-four       
+  seconds, someone dies in a road accident. That's over a million lives a   
+  year — and fifty million more injured. A catastrophic accident doesn't    
+  just create a legal problem. It                                           
+    creates a medical crisis, a financial crisis, and a communication       
+  crisis — all at once. And families have to navigate all of this while     
+  they're already dealing with the trauma of losing a loved                 
+    one — or even worse, watching them suffer.                              
+
+⏺ Some options:
+
+  Option A — Tightest (~15s):
+  Every twenty-four seconds, someone dies in a road accident. Fifty million more
+   are injured every year. And the families left behind face not just a legal 
+  crisis — but a medical, financial, and communication crisis, all while 
+  watching a loved one suffer.
+
+  Option B — Mid (~18s):
+  Every twenty-four seconds, someone dies in a road accident. A million lives a 
+  year — fifty million more injured. For the families left behind, it's not just
+   a legal problem. It's a medical crisis, a financial crisis, a communication 
+  crisis — all hitting at once, while they're still dealing with the trauma.
+
+  Option C — Punchy (~12s):
+  Every twenty-four seconds, someone dies on the road. Fifty million more are 
+  injured. The families are left drowning — in grief, in hospital records, in a 
+  system that takes years to pay out.
+
+  Which direction?
+
+❯ can we comibine 2 and 3 
+
+⏺ Every twenty-four seconds, someone dies in a road accident. A million lives a 
+  year — fifty million more injured. The families are left drowning — in grief, 
+  in hospital records, in a system that takes years to pay out. It's not just a 
+  legal problem. It's a medical crisis, a financial crisis, a communication 
+  crisis — all hitting at once.
+
+  How's that?
+
+❯ ok - now with the full script and 1.4x how long would it be? 
+
+⏺ Bash(python3 -c "
+      script = '''Every twenty-four seconds, someone dies in a road accident. A
+      million lives a year — fifty million more injured. The families are left…)
+  ⎿  Word count: 305
+     Raw (~150 wpm): 122s
+     At 1.15x (ElevenLabs): 106s
+     At 1.4x total: 87s
+
+⏺ Roughly 87 seconds — about a minute and a half. The new opening is shorter so
+  it shaved off about 10 seconds from the previous version. Want me to generate
+  it?
+
+❯ yes please 
+
+⏺ Bash(python3 - <<'PYEOF'
+      import urllib.request, json…)
+  ⎿  OK: 1708661 bytes
+  ⎿  (timeout 1m 30s)
+
+⏺ Bash(ffmpeg -y -i
+      /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_v2_raw.mp3 -filter:a
+      "atempo=1.22" /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_v2.mp3
+      2>&…)
+  ⎿ [out#0/mp3 @ 0xbf0c70180] video:0KiB audio:684KiB subtitle:0KiB other s
+    treams:0KiB global headers:0KiB muxing overhead: 0.032425%
+    size=     684KiB time=00:01:27.48 bitrate=  64.0kbits/s speed= 180x ela
+    … +2 lines (ctrl+o to expand)
+
+
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/voiceover_v2.mp3)
+  ⎿  (No content)
+
+⏺ Playing now. 87 seconds — right on the estimate. Want me to rebuild the video
+  with this voiceover?
+
+✻ Churned for 43s
+
+❯ ok cool - regenerate the video 
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Let me update the script to use the new voiceover and adjust the timings to
+  match the longer 87-second audio.
+
+⏺ Update(demo/record.mjs)
+  ⎿  Added 1 line, removed 1 line
+      16  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+      17  const FRAMES_DIR = path.join(__dirname, 'frames');
+      18  const OUTPUT = path.join(__dirname, 'demo.mp4');
+      19 -const VOICEOVER = path.join(__dirname, 'voiceover.mp3');       
+      19 +const VOICEOVER = path.join(__dirname, 'voiceover_v2.mp3');    
+      20  const SLIDE = path.join(__dirname, 'slide.html');
+      21  const BASE_URL = process.argv.includes('--url')
+      22    ? process.argv[process.argv.indexOf('--url') + 1]
+
+⏺ Now adjust timings — the audio is 87s so I need to spread the frames to fill
+  that duration better (more time on the opening/context sections).
+
+⏺ Update(demo/record.mjs)
+  ⎿  Added 27 lines, removed 32 lines
+       66  
+       67    const page = await browser.newPage();
+       68  
+       69 -  // ── Intro slide (3 seconds) ──                            
+       70 -  console.log('1/7  Intro slide...');                         
+       69 +  // ── Intro slide (5s) — "Every 24 seconds..." ──           
+       70 +  console.log('1/8  Intro slide...');                         
+       71    await page.goto(`file://${SLIDE}`, { waitUntil: 'networkidle
+           2' });
+       72    await sleep(500);
+       73 -  await screenshot(page, 3);                                  
+       73 +  await screenshot(page, 5);                                  
+       74  
+       75 -  // ── Home page with architecture diagram (5 seconds) ──    
+       76 -  console.log('2/7  Home page...');                           
+       75 +  // ── Home page (4s) — "Hospital records, police reports..."
+          + ──                                                           
+       76 +  console.log('2/8  Home page...');                           
+       77    await page.goto(BASE_URL, { waitUntil: 'networkidle2' });
+       78 -  await sleep(1500); // let it load fully                     
+       79 -  await screenshot(page, 2);                                  
+       78 +  await sleep(1500);                                          
+       79 +  await screenshot(page, 4);                                  
+       80  
+       81 -  // Scroll to architecture diagram                           
+       81 +  // ── Architecture diagram (6s) — "NyayaSetu builds a living
+          + KB..." ──                                                    
+       82 +  console.log('3/8  Architecture diagram...');                
+       83    await page.evaluate(() => {
+       84      const diag = document.querySelector('.archdiag');
+       85      if (diag) diag.scrollIntoView({ behavior: 'smooth', block:
+            'center' });
+       86    });
+       87    await sleep(600);
+       87 -  await screenshot(page, 3);                                  
+       88 +  await screenshot(page, 6);                                  
+       89  
+       89 -  // ── Click Replay — capture the ingestion animation (~15 se
+          -conds) ──                                                     
+       90 -  console.log('3/7  Replay — ingestion...');                  
+       91 -  // First scroll back up and click replay                    
+       90 +  // ── Click Replay — ingestion (~18s) — "Nine documents go i
+          +n..." ──                                                      
+       91 +  console.log('4/8  Replay — ingestion...');                  
+       92    await page.evaluate(() => window.scrollTo({ top: 0 }));
+       93    await sleep(300);
+       94 -                                                              
+       95 -  // Click the replay button which navigates to process pane  
+       94    await page.click('#homeReplay');
+       95    await sleep(500);
+       96 +  await screenshotLive(page, 18);                             
+       97  
+       99 -  // Capture ingestion phase live (documents appearing one by 
+          -one)                                                          
+      100 -  await screenshotLive(page, 15);                             
+      101 -                                                              
+      102 -  // ── Contradiction panel pulsing (5 seconds) ──            
+      103 -  console.log('4/7  Contradictions...');                      
+      104 -  // Scroll to contradictions panel                           
+       98 +  // ── Contradiction panel (6s) — "The police report says Mar
+          +ch fifth..." ──                                               
+       99 +  console.log('5/8  Contradictions...');                      
+      100    await page.evaluate(() => {
+      101      const cp = document.getElementById('contradictions');
+      102      if (cp) cp.scrollIntoView({ behavior: 'smooth', block: 'ce
+           nter' });
+      103    });
+      104    await sleep(400);
+      110 -  await screenshotLive(page, 5);                              
+      105 +  await screenshotLive(page, 6);                              
+      106  
+      112 -  // ── KB verify (5 seconds) ──                              
+      113 -  console.log('5/7  KB verification...');                     
+      107 +  // ── KB verify (6s) — "An independent verifier..." ──      
+      108 +  console.log('6/8  KB verification...');                     
+      109    await page.evaluate(() => {
+      110      const kb = document.getElementById('kbVerify');
+      111      if (kb) kb.scrollIntoView({ behavior: 'smooth', block: 'ce
+           nter' });
+      112    });
+      113    await sleep(400);
+      119 -  await screenshotLive(page, 5);                              
+      114 +  await screenshotLive(page, 6);                              
+      115  
+      121 -  // ── Wait for drafting to finish, then switch to Petition t
+          -ab (15 seconds) ──                                            
+      122 -  console.log('6/7  Drafting + petition tab...');             
+      116 +  // ── Drafting + petition tab (15s) — "Claude drafts the ful
+          +l petition..." ──                                             
+      117 +  console.log('7/8  Drafting + petition tab...');             
+      118    await screenshotLive(page, 10);
+      119  
+      120    // Click petition tab
+     ...
+      133      if (pv) pv.scrollIntoView({ behavior: 'smooth', block: 'st
+           art' });
+      134    });
+      135    await sleep(500);
+      141 -  await screenshot(page, 5);                                  
+      136 +  await screenshot(page, 7);                                  
+      137  
+      143 -  // ── Scroll to petition content (5 seconds) ──             
+      144 -  console.log('7/7  Petition + stats...');                    
+      138 +  // ── Petition + closing stats (10s) — "One knowledge base..
+          +." ──                                                         
+      139 +  console.log('8/8  Petition + stats...');                    
+      140    await page.evaluate(() => {
+      141      const pw = document.getElementById('petitionWrap');
+      142      if (pw) pw.scrollIntoView({ behavior: 'smooth', block: 'st
+           art' });
+      143    });
+      144    await sleep(500);
+      150 -  await screenshot(page, 3);                                  
+      145 +  await screenshot(page, 4);                                  
+      146  
+      152 -  // Scroll back to stat strip to end on the orchestration sta
+          -ts                                                            
+      147 +  // End on stat strip                                        
+      148    await page.evaluate(() => {
+      149      const ss = document.getElementById('statstrip');
+      150      if (ss) ss.scrollIntoView({ behavior: 'smooth', block: 'ce
+           nter' });
+      151    });
+      152    await sleep(500);
+      158 -  await screenshot(page, 3);                                  
+      153 +  await screenshot(page, 5);                                  
+      154  
+      155    await browser.close();
+      156    console.log(`\nCaptured ${frameNum} frames.`);
+
+⏺ Bash(node /Users/harikrishna/dev/ClaudeDevDay/demo/record.mjs 2>&1)
+  ⎿  Launching browser...
+     1/8  Intro slide...
+     2/8  Home page...
+     … +111 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+⏺ Bash(ffprobe -v error -show_entries format=duration -of
+      default=noprint_wrappers=1:nokey=1
+      /Users/harikrishna/dev/ClaudeDevDay/demo/demo.mp4 && open
+      /Users/harikrish…)
+  ⎿  74.000000
+
+⏺ Video is 74 seconds (the video frames end before the audio since we used
+  -shortest). Let me fix that — the audio is 87s so I need more frames to cover
+  the full voiceover.
+
+⏺ Update(demo/record.mjs)
+  ⎿  Added 2 lines, removed 2 lines
+      78    await sleep(1500);
+      79    await screenshot(page, 4);
+      80  
+      81 -  // ── Architecture diagram (6s) — "NyayaSetu builds a living 
+         -KB..." ──                                                      
+      81 +  // ── Architecture diagram (8s) — "NyayaSetu builds a living 
+         +KB..." ──                                                      
+      82    console.log('3/8  Architecture diagram...');
+      83    await page.evaluate(() => {
+      84      const diag = document.querySelector('.archdiag');
+      85      if (diag) diag.scrollIntoView({ behavior: 'smooth', block: 
+          'center' });
+      86    });
+      87    await sleep(600);
+      88 -  await screenshot(page, 6);                                   
+      88 +  await screenshot(page, 8);                                   
+      89  
+      90    // ── Click Replay — ingestion (~18s) — "Nine documents go in
+          ..." ──
+      91    console.log('4/8  Replay — ingestion...');
+
+⏺ Update(demo/record.mjs)
+  ⎿  Added 4 lines, removed 4 lines
+      133      if (pv) pv.scrollIntoView({ behavior: 'smooth', block: 'st
+           art' });
+      134    });
+      135    await sleep(500);
+      136 -  await screenshot(page, 7);                                  
+      136 +  await screenshot(page, 8);                                  
+      137  
+      138 -  // ── Petition + closing stats (10s) — "One knowledge base..
+          -." ──                                                         
+      138 +  // ── Petition + closing stats (12s) — "One knowledge base..
+          +." ──                                                         
+      139    console.log('8/8  Petition + stats...');
+      140    await page.evaluate(() => {
+      141      const pw = document.getElementById('petitionWrap');
+      142      if (pw) pw.scrollIntoView({ behavior: 'smooth', block: 'st
+           art' });
+      143    });
+      144    await sleep(500);
+      145 -  await screenshot(page, 4);                                  
+      145 +  await screenshot(page, 5);                                  
+      146  
+      147    // End on stat strip
+      148    await page.evaluate(() => {
+     ...
+      150      if (ss) ss.scrollIntoView({ behavior: 'smooth', block: 'ce
+           nter' });
+      151    });
+      152    await sleep(500);
+      153 -  await screenshot(page, 5);                                  
+      153 +  await screenshot(page, 7);                                  
+      154  
+      155    await browser.close();
+      156    console.log(`\nCaptured ${frameNum} frames.`);
+
+⏺ Bash(node /Users/harikrishna/dev/ClaudeDevDay/demo/record.mjs 2>&1)
+  ⎿  Launching browser...
+     1/8  Intro slide...
+     2/8  Home page...
+     … +112 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+⏺ Bash(ffprobe -v error -show_entries format=duration -of
+      default=noprint_wrappers=1:nokey=1
+      /Users/harikrishna/dev/ClaudeDevDay/demo/demo.mp4 && open
+      /Users/harikrish…)
+  ⎿  80.000000
+
+⏺ Playing now. 80 seconds — the video frames still end 7 seconds before the
+  audio. The voiceover's closing line ("From weeks to minutes") will play over
+  the last stat strip frame. That should work fine since the final stat strip is
+   a strong visual to hold on. How does it look?
+
+✻ Churned for 3m 51s
+
+❯ Claude drafts the full petition. But here's the key — a second,           
+  completely independent agent, with its own fresh context, re-derives      
+  every figure from the raw facts. Over a million dollars in lost           
+     earnings. Sixty thousand in medical costs. Every head cross-verified   
+  to the cent. If anything doesn't match, the verifier catches it, explains 
+   why, - it stopped here and it shoudl finish - even if we are just at the 
+   petition screen                                                          
+
+⏺ The audio is getting cut off because of the -shortest flag in ffmpeg — it
+  stops when the video frames run out. Let me fix that so the video holds the
+  last frame until the audio finishes.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Update(demo/record.mjs)
+  ⎿  Added 14 lines
+      157  
+      158    // ── Stitch with ffmpeg ──
+      159    console.log('Stitching video with ffmpeg...');
+      160 +  // Get audio duration so we can pad the last frame to match 
+      161 +  const probeDur = execSync(`ffprobe -v error -show_entries fo
+          +rmat=duration -of default=noprint_wrappers=1:nokey=1 ${VOICEOV
+          +ER}`).toString().trim();                                      
+      162 +  const audioDur = parseFloat(probeDur);                      
+      163 +  const videoDur = frameNum / FPS;                            
+      164 +  const pad = Math.max(0, Math.ceil(audioDur - videoDur));    
+      165 +  if (pad > 0) {                                              
+      166 +    console.log(`Padding last frame for ${pad}s to match audio
+          +...`);                                                        
+      167 +    const lastFrame = path.join(FRAMES_DIR, `frame_${String(fr
+          +ameNum - 1).padStart(5, '0')}.png`);                          
+      168 +    for (let i = 0; i < pad * FPS; i++) {                     
+      169 +      fs.copyFileSync(lastFrame, framePath());                
+      170 +    }                                                         
+      171 +    console.log(`Total frames now: ${frameNum}`);             
+      172 +  }                                                           
+      173 +                                                              
+      174    const cmd = [
+      175      'ffmpeg', '-y',
+      176      '-framerate', String(FPS),
+
+⏺ Bash(node /Users/harikrishna/dev/ClaudeDevDay/demo/record.mjs 2>&1)
+  ⎿  Launching browser...
+     1/8  Intro slide...
+     2/8  Home page...
+     … +114 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+⏺ Bash(ffprobe -v error -show_entries format=duration -of
+      default=noprint_wrappers=1:nokey=1
+      /Users/harikrishna/dev/ClaudeDevDay/demo/demo.mp4 && open
+      /Users/harikrish…)
+  ⎿  87.482993
+
+⏺ 87 seconds — now matches the full voiceover. The last frame (stat strip) holds
+   while the narration finishes. Playing now.
+
+✻ Crunched for 1m 40s
+
+❯ show me the video again? 
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/demo.mp4)
+  ⎿  (No content)
+
+⏺ Playing now.
+
+❯ can we change the text of the slide accordingly with the broader vision? 
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Update(demo/slide.html)
+  ⎿  Added 2 lines, removed 2 lines
+      89  
+      90    <hr/>
+      91  
+      92 -  <div class="what">AI-orchestrated Motor Accident petition dra
+         -fter with independent verification agents</div>                
+      92 +  <div class="what">A living knowledge base for catastrophic in
+         +jury — powering legal drafting, medical advocacy, rehab plannin
+         +g, and AAC communication</div>                                 
+      93  
+      94    <hr/>
+      95  
+      96 -  <div class="how">5-stage Opus pipeline: structured extraction
+         -, cross-stream reconciliation, fresh-context KB verification, e
+         -xtended-thinking drafting, arithmetic re-derivation with autono
+         -mous revision loop</div>                                       
+      96 +  <div class="how">One KB, multiple agents: Claude orchestrates
+         + structured extraction, cross-stream reconciliation, fresh-cont
+         +ext verification, and autonomous revision — today demoing the l
+         +egal agent</div>                                               
+      97  
+      98    <hr/>
+      99  
+
+⏺ Bash(open /Users/harikrishna/dev/ClaudeDevDay/demo/slide.html)
+  ⎿  (No content)
+
+⏺ Updated. The "what" line now frames the broader platform vision, and the "how"
+   line positions the legal agent as "today's demo" from a multi-agent system.
+  Want me to regenerate the video with this slide?
+
+❯ ok looks good - and we can stay in that page till we get to showing the   
+  legal agent? thoughts?                                                    
+
+⏺ Good idea — hold the intro slide for the entire opening narration (the global
+  stats, the crisis, the platform vision) and only cut to the app when you hear
+  "Today, we're showing the legal agent. Watch." That's roughly 30 seconds on
+  the slide instead of 5.
+
+  It works because:
+  - The slide text reinforces what the voice is saying (KB, multiple agents,
+  legal/medical/rehab/AAC)
+  - Judges aren't staring at a static app while hearing about the broader
+  problem
+  - The cut to the live UI creates a clear "now watch" moment
+
+  Want me to update the timings and regenerate?
+
+❯ yes please 
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Update(demo/record.mjs)
+  ⎿  Added 9 lines, removed 20 lines
+      66  
+      67    const page = await browser.newPage();
+      68  
+      69 -  // ── Intro slide (5s) — "Every 24 seconds..." ──            
+      70 -  console.log('1/8  Intro slide...');                          
+      69 +  // ── Intro slide (30s) — holds for entire opening narration 
+         +──                                                             
+      70 +  // "Every 24 seconds..." through "...today demoing the legal 
+         +agent. Watch."                                                 
+      71 +  console.log('1/6  Intro slide (30s — full opening narration).
+         +..');                                                          
+      72    await page.goto(`file://${SLIDE}`, { waitUntil: 'networkidle2
+          ' });
+      73    await sleep(500);
+      73 -  await screenshot(page, 5);                                   
+      74 +  await screenshot(page, 30);                                  
+      75  
+      75 -  // ── Home page (4s) — "Hospital records, police reports..." 
+         -──                                                             
+      76 -  console.log('2/8  Home page...');                            
+      76 +  // Pre-load the app in background so it's ready for the cut  
+      77 +  console.log('2/6  Loading app...');                          
+      78    await page.goto(BASE_URL, { waitUntil: 'networkidle2' });
+      79    await sleep(1500);
+      79 -  await screenshot(page, 4);                                   
+      80  
+      81 -  // ── Architecture diagram (8s) — "NyayaSetu builds a living 
+         -KB..." ──                                                      
+      82 -  console.log('3/8  Architecture diagram...');                 
+      83 -  await page.evaluate(() => {                                  
+      84 -    const diag = document.querySelector('.archdiag');          
+      85 -    if (diag) diag.scrollIntoView({ behavior: 'smooth', block: 
+         -'center' });                                                   
+      86 -  });                                                          
+      87 -  await sleep(600);                                            
+      88 -  await screenshot(page, 8);                                   
+      89 -                                                               
+      90 -  // ── Click Replay — ingestion (~18s) — "Nine documents go in
+         -..." ──                                                        
+      91 -  console.log('4/8  Replay — ingestion...');                   
+      92 -  await page.evaluate(() => window.scrollTo({ top: 0 }));      
+      93 -  await sleep(300);                                            
+      81 +  // ── Click Replay — ingestion (~15s) — "Nine documents go in
+         +..." ──                                                        
+      82 +  console.log('3/6  Replay — ingestion...');                   
+      83    await page.click('#homeReplay');
+      84    await sleep(500);
+      96 -  await screenshotLive(page, 18);                              
+      85 +  await screenshotLive(page, 15);                              
+      86  
+      87    // ── Contradiction panel (6s) — "The police report says Marc
+          h fifth..." ──
+      88    console.log('5/8  Contradictions...');
+
+⏺ Update(demo/record.mjs)
+  ⎿  Added 11 lines, removed 12 lines
+      85    await screenshotLive(page, 15);
+      86  
+      87    // ── Contradiction panel (6s) — "The police report says Marc
+          h fifth..." ──
+      88 -  console.log('5/8  Contradictions...');                       
+      88 +  console.log('4/6  Contradictions + KB verify...');           
+      89    await page.evaluate(() => {
+      90      const cp = document.getElementById('contradictions');
+      91      if (cp) cp.scrollIntoView({ behavior: 'smooth', block: 'cen
+          ter' });
+     ...
+       93    await sleep(400);
+       94    await screenshotLive(page, 6);
+       95  
+       96 -  // ── KB verify (6s) — "An independent verifier..." ──      
+       97 -  console.log('6/8  KB verification...');                     
+       96 +  // KB verify                                                
+       97    await page.evaluate(() => {
+       98      const kb = document.getElementById('kbVerify');
+       99      if (kb) kb.scrollIntoView({ behavior: 'smooth', block: 'ce
+           nter' });
+      100    });
+      101    await sleep(400);
+      103 -  await screenshotLive(page, 6);                              
+      102 +  await screenshotLive(page, 5);                              
+      103  
+      105 -  // ── Drafting + petition tab (15s) — "Claude drafts the ful
+          -l petition..." ──                                             
+      106 -  console.log('7/8  Drafting + petition tab...');             
+      107 -  await screenshotLive(page, 10);                             
+      104 +  // ── Drafting + petition tab — "Claude drafts the full peti
+          +tion..." ──                                                   
+      105 +  console.log('5/6  Drafting + petition tab...');             
+      106 +  await screenshotLive(page, 8);                              
+      107  
+      108    // Click petition tab
+      109    await page.evaluate(() => {
+     ...
+      121      if (pv) pv.scrollIntoView({ behavior: 'smooth', block: 'st
+           art' });
+      122    });
+      123    await sleep(500);
+      125 -  await screenshot(page, 8);                                  
+      124 +  await screenshot(page, 7);                                  
+      125  
+      127 -  // ── Petition + closing stats (12s) — "One knowledge base..
+          -." ──                                                         
+      128 -  console.log('8/8  Petition + stats...');                    
+      126 +  // ── Petition + closing stats — "One knowledge base..." ── 
+      127 +  console.log('6/6  Petition + closing...');                  
+      128    await page.evaluate(() => {
+      129      const pw = document.getElementById('petitionWrap');
+      130      if (pw) pw.scrollIntoView({ behavior: 'smooth', block: 'st
+           art' });
+      131    });
+      132    await sleep(500);
+      134 -  await screenshot(page, 5);                                  
+      133 +  await screenshot(page, 4);                                  
+      134  
+      135    // End on stat strip
+      136    await page.evaluate(() => {
+     ...
+      138      if (ss) ss.scrollIntoView({ behavior: 'smooth', block: 'ce
+           nter' });
+      139    });
+      140    await sleep(500);
+      142 -  await screenshot(page, 7);                                  
+      141 +  await screenshot(page, 6);                                  
+      142  
+      143    await browser.close();
+      144    console.log(`\nCaptured ${frameNum} frames.`);
+
+⏺ Bash(node /Users/harikrishna/dev/ClaudeDevDay/demo/record.mjs 2>&1)
+  ⎿  Launching browser...
+     1/6  Intro slide (30s — full opening narration)...
+     2/6  Loading app...
+     … +114 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+⏺ Bash(ffprobe -v error -show_entries format=duration -of
+      default=noprint_wrappers=1:nokey=1
+      /Users/harikrishna/dev/ClaudeDevDay/demo/demo.mp4 && open
+      /Users/harikrish…)
+  ⎿  87.482993
+
+⏺ Playing now. 87 seconds — intro slide holds for the full 30 seconds of opening
+   narration, then cuts straight to the app when "Today, we're showing the legal
+   agent. Watch." hits. How does it look?
+
+✻ Brewed for 1m 56s
+
+❯ looks good - save it for now. have more things to do and then we can come 
+   back to it                                                               
+
+⏺ Saved at demo/demo.mp4. Moving on — what's next?
+
+❯ Project Description* - Describe the project and what it solves - we need  
+  to fill in details for the submission                                     
+
+⏺ Here's a draft project description:
+
+  ---
+  NyayaSetu
+
+  Every year, over a million people die on the roads and fifty million more are
+  injured. In India alone, over a million compensation cases are stuck in
+  tribunals — ten billion dollars unpaid — with ninety percent stalled because
+  of documentation problems: missing facts, wrong arithmetic, unreconciled
+  records.
+
+  NyayaSetu is a living knowledge base for catastrophic injury victims. It
+  ingests police reports, hospital records, and financial documents, extracts
+  structured facts using Claude's structured output, and reconciles them across
+  sources — catching conflicts like mismatched dates between a police FIR and a
+  hospital admission record. Contradictions are flagged, never silently buried.
+
+  What makes it different is how it verifies its own work.
+
+  Two independent verification agents — each running in a fresh context with no
+  memory of prior stages — audit the system's output:
+
+  1. KB Verifier: Grades the knowledge base against 10 formal invariants
+  (complete provenance, no silent overwrites, referential integrity). Only when
+  every check passes does the system commit.
+  2. Petition Verifier: Re-derives every figure from scratch — loss of future
+  earnings, medical expenses, grand total — and compares to the petition's
+  claims. If any number is off by even a rupee, it rejects with structured
+  feedback and the drafter autonomously revises.
+
+  The legal petition is just one spoke. The same knowledge base powers medical
+  advocacy, rehab planning, and AAC communication for patients who've lost the
+  ability to speak.
+
+  Built with Claude:
+  - 12+ orchestrated Claude calls per run
+  - Structured output extraction across 9 document types
+  - Extended thinking for petition drafting
+  - 2 fresh-context independent verification agents
+  - Autonomous revision loop with verifier feedback
+  - Claude Code dynamic workflow (/verify-release) fanning out 5 parallel agents
+   for release gating
+  - Custom subagent definitions (adversarial-verifier, rubric-auditor)
+
+  ---
+  Want to adjust the tone, length, or emphasis on anything?
+
+❯ ill tell you all the sections and then we can split it accoridnly -       
+  Project Description*                                                      
+  Describe your project and what problem it solves...                       
+  Public Project Demo Video (1-minute demo video showcasing what you        
+  built)*                                                                   
+  https://youtube.com/watch?v=...                                           
+  How was Opus 4.8 used in your project?*                                   
+  Public GitHub Repository*                                                 
+  https://github.com/username/repository                                    
+  Live Demo URL (deployed production application link)*                     
+  https://your-project.com                                                  
+  Link to Session Log - For Claude.ai: use the Share button (top right) and 
+   paste the link. For Claude Code: run /export session-log.md, commit the  
+  file to your repo, and link it here. (Optional)                           
+  https://claude.ai/share/...                                               
+  How did you orchestrate Claude's work? Briefly describe your strategy for 
+   directing Claude — e.g., iteration loops, verifier agents, multi-agent   
+  pipelines, or custom scaffolding (CLAUDE.md, slash commands, scripts).    
+  Link the brief, rubric, and any workflow scripts you gave Claude (files   
+  in your repo are fine).*                                                  
+  Do you have any feedback on Opus 4.8?                                     
+
+⏺ Here's a draft for each field:
+
+  ---
+  Project Description*
+
+  Every year, over a million people die on the roads and fifty million more are
+  injured. In India alone, over a million compensation cases are stuck in
+  tribunals — ten billion dollars unpaid — with ninety percent stalled by
+  documentation problems: missing facts, wrong arithmetic, unreconciled records.
+
+  NyayaSetu is a living knowledge base for catastrophic injury victims. It
+  ingests police reports, hospital records, and financial documents, extracts
+  structured facts, and reconciles them across sources — catching conflicts like
+   mismatched dates between a police FIR and a hospital record. Contradictions
+  are flagged, never buried.
+
+  Two independent verification agents — each in a fresh context with no memory
+  of prior stages — audit the output. A KB verifier grades against 10
+  invariants. A petition verifier re-derives every figure from scratch. If any
+  number is wrong, it rejects and the drafter revises autonomously.
+
+  The legal petition is one spoke. The same KB powers medical advocacy, rehab
+  planning, and AAC communication for patients who've lost the ability to speak.
+
+  ---
+  Public Project Demo Video*
+
+  [you'll paste the YouTube URL after uploading demo/demo.mp4]
+
+  ---
+  How was Opus 4.8 used in your project?*
+
+  Opus is the backbone of every stage in the pipeline:
+
+  1. Structured extraction — Opus extracts facts from 9 documents (police FIRs,
+  hospital summaries, imaging reports, disability certificates, bills, income
+  certificates, ITRs) using structured output with typed schemas, producing
+  sourced facts with confidence scores.
+  2. KB verification (fresh-context agent) — A separate Opus call, with no
+  memory of the extraction, loads the candidate knowledge base and grades it
+  against 10 formal invariants (provenance, referential integrity, no silent
+  overwrites). This is not a rubber stamp — it independently audits the data.
+  3. Petition drafting (extended thinking) — Opus drafts a full Motor Accident
+  Claims Tribunal petition from the KB facts only, applying Supreme Court
+  formulae (Sarla Verma multipliers, Pranay Sethi future prospects), citing
+  every fact by ID.
+  4. Petition verification (fresh-context agent) — A second independent Opus
+  call re-derives every figure from the raw KB: loss of future earning, medical
+  expenses, grand total. It compares to the petition's claims and rejects with
+  structured feedback if anything is off.
+  5. Autonomous revision loop — When the verifier rejects, its feedback is fed
+  back to the drafter. Opus revises and resubmits without human intervention.
+  6. Claude Code workflows — A /verify-release workflow fans out 5 parallel
+  verification agents (selftest, integration test, rubric auditor, deploy
+  checker, adversarial verifier) and synthesizes a release-readiness verdict.
+
+  ---
+  Public GitHub Repository*
+
+  https://github.com/harykrish/mact-petition-drafter
+
+  ---
+  Live Demo URL*
+
+  https://mact-petition-drafter.onrender.com
+
+  ---
+  Link to Session Log (Optional)
+
+  [run /export and commit, or share Claude.ai link]
+
+  ---
+  How did you orchestrate Claude's work?*
+
+  Architecture: 5-stage pipeline with fresh-context verification and autonomous 
+  revision.
+
+  The key insight is that the verifiers never see the extraction context — they
+  operate as independent agents, preventing the system from grading its own
+  homework.
+
+  Directing Claude:
+  - Brief
+  (https://github.com/harykrish/mact-petition-drafter/blob/main/brief.md) —
+  defines the case, document corpus, and expected outputs
+  - KB Rubric (https://github.com/harykrish/mact-petition-drafter/blob/main/rubr
+  ic/kb_invariants.md) — 10 MUST invariants the KB must pass (provenance, unique
+   IDs, no silent overwrites, referential integrity, etc.)
+  - Petition Rubric (https://github.com/harykrish/mact-petition-drafter/blob/mai
+  n/rubric/petition_rubric.md) — 13 MUST items (arithmetic to the rupee,
+  precedent citations, disputed facts handling)
+  - Selftest (https://github.com/harykrish/mact-petition-drafter/blob/main/scrip
+  ts/selftest.py) — deterministic test suite validating reconciliation,
+  contradiction detection, and arithmetic
+  - Integration test (https://github.com/harykrish/mact-petition-drafter/blob/ma
+  in/scripts/itest.py) — end-to-end pipeline test with stubbed LLM calls
+
+  Claude Code dynamic workflows:
+  - https://github.com/harykrish/mact-petition-drafter/blob/main/.claude/workflo
+  ws/verify-release.md — fans out 5 parallel agents (selftest, itest,
+  rubric-auditor, deploy-checker, adversarial-verifier), synthesizes PASS/FAIL
+  - https://github.com/harykrish/mact-petition-drafter/blob/main/.claude/agents/
+  adversarial-verifier.md — hunts for untraceable facts and arithmetic errors
+  - https://github.com/harykrish/mact-petition-drafter/blob/main/.claude/agents/
+  rubric-auditor.md — grades every MUST item in both rubrics
+
+  Iteration loop: Verifier rejects → structured feedback → drafter revises →
+  re-verify. No human in the loop. The verifier caught an injected arithmetic
+  error and the drafter fixed it autonomously in testing.
+
+  ---
+  Do you have any feedback on Opus 4.8?
+
+  [your personal feedback — want me to draft something?]
+
+  ---
+  Want to adjust any of these sections?
+
+✻ Worked for 32s
+
+❯ whats the team name 
+
+⏺ Based on the repo and project, you're submitting as a solo builder. The team
+  name would just be your project name or your own name. Some options:
+
+  1. NyayaSetu — use the project name as the team name
+  2. Harikrishna Narayanan — your name
+  3. Something else?
+
+  What do you want to go with?
+
+❯ somethig creative please 
+
+⏺ A few options:
+
+  1. Setu Labs — "setu" means bridge in Sanskrit (matching NyayaSetu = bridge to
+   justice), "Labs" gives it a builder feel
+  2. Nyaya.ai — short, says exactly what it does — AI for justice
+  3. Bridge Protocol — the literal meaning of "setu," nods to the multi-agent
+  orchestration
+  4. One KB — from your closing line: "One knowledge base. Twelve orchestrated
+  calls."
+  5. Fresh Context — the core architectural insight that makes your verifiers
+  independent
+
+  Which one resonates, or want me to try a different direction?
+
+❯ self evolving knwoledge base - so someything like darwin or something for 
+   legal                                                                    
+
+⏺ Nice direction. Some riffs:
+
+  1. Darwin Legal — clean, says exactly that
+  2. Evolex — evolution + lex (law)
+  3. Lex Darwin — flipped, sounds like a law firm name (which is kind of the
+  point)
+  4. Adaptive Counsel — the KB adapts, counsel = legal advice
+  5. Mutagen — the KB mutates/evolves as documents come in, contradictions get
+  flagged
+  6. Selekt — self-evolving legal knowledge base (+ nod to natural selection)
+
+  Which vibe — formal/law-firm, techy, or punchy?
+
+❯ need not ve just klegeal right 
+
+⏺ Right — it's broader than legal. The KB powers medical, rehab, AAC too. Here's
+   a fresh set:
+
+  1. Darwin KB — simple, directly says self-evolving knowledge base
+  2. Evolvr — the KB that evolves as new documents come in
+  3. Adaptis — adapts across domains (legal, medical, rehab, communication)
+  4. Selekt — still works — self-evolving knowledge, natural selection across
+  streams
+  5. Helion — from "helix" (evolution) + suffix, domain-agnostic
+  6. Cambrian — the Cambrian explosion gave rise to all species; your KB gives
+  rise to all agents
+  7. Phenotype — what the KB expresses changes depending on the agent (legal,
+  medical, AAC)
+
+  I like Cambrian — one KB, many agents emerging from it, and it's a direct
+  Darwin-era reference without being "Darwin" literally.
+
+❯ what could be good constructive feedback which will get me an interview   
+  or job at anthropic                                                       
+
+⏺ Honest, specific, technically deep feedback that shows you understand the
+  model's architecture and care about the same things Anthropic cares about.
+  Here's what I'd suggest based on your actual experience building NyayaSetu:
+
+  ---
+  Feedback on Opus 4.8:
+
+  The fresh-context verification pattern — where a separate Opus call audits
+  work done by a prior call with zero shared memory — was the most important
+  architectural decision in this project. It works remarkably well: the verifier
+   genuinely catches arithmetic errors the drafter makes, rather than
+  rubber-stamping its own output. But I had to build this separation myself. It
+  would be powerful if the API had first-class support for context isolation 
+  between agents — a way to guarantee that agent B cannot see agent A's
+  reasoning, only the artifact it produced. Right now I'm relying on discipline,
+   not enforcement.
+
+  Structured output was excellent for fact extraction — the typed schemas meant
+  I could reconcile facts deterministically downstream without parsing natural
+  language. One gap: when Opus extracts a numeric value with low confidence, I'd
+   like a way to express structured uncertainty — e.g., "this looks like 7200000
+   but the source is ambiguous" — beyond a single confidence float.
+
+  Extended thinking made a real difference in petition drafting quality. The
+  model applies the Sarla Verma multiplier table and Pranay Sethi future
+  prospects correctly when given the precedent files. However, I couldn't
+  introspect why it chose a particular multiplier during thinking — selective 
+  visibility into the thinking trace for verification purposes (not the full
+  chain-of-thought, but the key decision points) would make the autonomous
+  revision loop more debuggable.
+
+  The biggest unlock for my project would be native multi-agent orchestration 
+  with verifiable context boundaries — fan out N agents, guarantee isolation,
+  merge results with a synthesis step. I built this with Claude Code workflows,
+  but having it as a first-class API primitive would make self-verifying systems
+   much easier to build reliably.
+
+  ---
+  This works because it:
+  - Shows you built something real and hit actual limits
+  - Frames gaps as product suggestions, not complaints
+  - Aligns with what Anthropic cares about (safety, verification, avoiding
+  self-grading)
+  - Demonstrates you think about guarantees and enforcement, not just happy
+  paths
+  - The "context isolation" point is genuinely novel and relevant to their
+  alignment research
+
+  Want to adjust the tone or emphasis?
+
+❯ anything lacking?  
+
+⏺ Looking at the full submission, a few gaps:
+
+  Still TODO:
+  1. Upload video to YouTube — you have demo/demo.mp4 but need a public YouTube
+  link
+  2. Session log — run /export and commit it, or share a Claude.ai link
+  3. Team name — pick one (leaning Cambrian?)
+
+  Would strengthen the submission:
+  4. README.md — right now it probably doesn't reflect the broader vision
+  (living KB, multiple spokes). Judges will read it. Worth updating with the
+  architecture diagram in text, the stats, and the multi-agent story.
+  5. TECH.md — does it cover the fresh-context verification pattern? That's your
+   strongest differentiator and judges should find it easily.
+  6. The "How did you orchestrate" answer doesn't mention that the project is
+  also used on a real case — the real-corpus tab with actual documents (vision
+  OCR on scans). That's a huge impact signal most hackathon projects don't have.
+  7. The feedback section could add one line about your personal story — why you
+   built this. If there's a real advocate using this for a real catastrophic
+  injury case, say that. Anthropic cares deeply about real-world impact.
+
+  Want me to update the README and TECH.md, and add the real-case angle to the
+  orchestration answer?
+
+❯ no for the feedback - anything lacking? 
+
+⏺ The feedback covers technical depth well. A few things that could make it
+  stronger:
+
+  Missing angles:
+
+  1. Safety/alignment signal — You built a system where the model verifies its
+  own work without self-grading. That's directly relevant to Anthropic's
+  alignment mission. You could add: "Building NyayaSetu reinforced my conviction
+   that AI systems handling high-stakes decisions (legal, medical) need 
+  architectural guarantees against self-validation — not just prompting. The 
+  fresh-context pattern is a crude version of this, but I believe it should be a
+   core primitive."
+  2. What surprised you — Anthropic loves hearing what the model did that you
+  didn't expect. E.g., "I was surprised that Opus correctly applied the Sarla 
+  Verma multiplier table without any few-shot examples — just the precedent 
+  document. It also correctly identified that 'V. A. Rao' and 'Vikram Anand Rao'
+   are the same person, avoiding a false contradiction. That kind of real-world 
+  reasoning is hard to test for but critical in legal contexts."
+  3. What you'd build next with better primitives — Shows you're thinking
+  forward: "With native context isolation and multi-agent orchestration, I'd 
+  extend the verification pattern to medical advocacy — where a rehab agent 
+  plans treatment and an independent agent audits it against the patient's 
+  actual records. The stakes are even higher than legal drafting."
+  4. One honest limitation — Shows intellectual honesty, which Anthropic values
+  above praise: "The model occasionally hallucinated a precedent citation that 
+  sounded plausible but didn't exist in the provided documents. The verifier 
+  caught it, which validates the architecture — but it means the drafter still 
+  can't be trusted without the verifier. That's both the problem and the point."
+
+  Want me to weave these into the full feedback draft?
+
+❯ sure 
+
+⏺ The fresh-context verification pattern — where a separate Opus call audits 
+  work done by a prior call with zero shared memory — was the most important 
+  architectural decision in this project. It works remarkably well: the verifier
+   genuinely catches arithmetic errors the drafter makes, rather than 
+  rubber-stamping its own output. But I had to build this separation myself. It 
+  would be powerful if the API had first-class support for context isolation 
+  between agents — a way to guarantee that agent B cannot see agent A's 
+  reasoning, only the artifact it produced. Right now I'm relying on discipline,
+   not enforcement.
+
+  Building NyayaSetu reinforced my conviction that AI systems handling 
+  high-stakes decisions — legal, medical — need architectural guarantees against
+   self-validation, not just prompting. The fresh-context pattern is a crude 
+  version of this, but I believe it should be a core primitive.
+
+  Structured output was excellent for fact extraction — the typed schemas meant 
+  I could reconcile facts deterministically downstream without parsing natural 
+  language. One gap: when Opus extracts a numeric value with low confidence, I'd
+   like a way to express structured uncertainty — e.g., "this looks like 7200000
+   but the source is ambiguous" — beyond a single confidence float.
+
+  Extended thinking made a real difference in petition drafting quality. I was 
+  surprised that Opus correctly applied the Sarla Verma multiplier table without
+   any few-shot examples — just the precedent document. It also correctly 
+  identified that "V. A. Rao" and "Vikram Anand Rao" are the same person, 
+  avoiding a false contradiction. That kind of real-world reasoning is hard to 
+  test for but critical in legal contexts. However, I couldn't introspect why it
+   chose a particular multiplier during thinking — selective visibility into the
+   thinking trace for verification purposes (not the full chain-of-thought, but 
+  key decision points) would make the autonomous revision loop more debuggable.
+
+  One honest limitation: the model occasionally hallucinated a precedent 
+  citation that sounded plausible but didn't exist in the provided documents. 
+  The verifier caught it, which validates the architecture — but it means the 
+  drafter still can't be trusted without the verifier. That's both the problem 
+  and the point.
+
+  The biggest unlock for my project would be native multi-agent orchestration 
+  with verifiable context boundaries — fan out N agents, guarantee isolation, 
+  merge results with a synthesis step. With that primitive, I'd extend the 
+  verification pattern to medical advocacy — where a rehab agent plans treatment
+   and an independent agent audits it against the patient's actual records. The 
+  stakes are even higher than legal drafting.
+
+  How's that?

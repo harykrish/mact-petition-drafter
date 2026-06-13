@@ -1,37 +1,68 @@
-# MACT Petition Drafter
+# NyayaSetu
 
-A self-maintaining case knowledge base that drafts a precedent-grounded
-compensation petition for Indian **Motor Accident Claims Tribunal (MACT)** cases —
-and verifies its own work.
+A **living knowledge base for catastrophic injury** — powering legal drafting,
+medical advocacy, rehab planning, and AAC communication from a single, self-maintaining
+case record.
 
-> Ingest documents → reconcile facts into a self-consistent KB → verify the KB
-> against a rubric in a **fresh context** → draft a petition from the KB alone →
-> an **independent verifier re-derives every number** and sends the draft back if
-> it doesn't add up.
+> Every 24 seconds, someone dies on the world's roads. Over 50 million more are
+> injured each year. In India alone: 155,000+ annual deaths, over a million MACT
+> cases stuck in tribunals, $10 billion in unpaid compensation, and 90% of claims
+> stalled by documentation problems. Families face this while already dealing with
+> the trauma of losing — or watching — a loved one suffer.
 
-See [`brief.md`](brief.md) for the problem statement, who it's for, and the bar for "done".
+NyayaSetu ingests every document in a catastrophic injury case — police reports,
+hospital records, disability certificates, salary slips, insurance papers — and
+builds a **structured, sourced, self-consistent knowledge base**. From that one KB,
+multiple agents act:
 
-## Why this is hard (and what the loop automates)
+- **Legal drafting** — MACT petition with every rupee traced to a sourced fact
+- **Medical advocacy** — treatment timeline, prognosis tracking, second-opinion prep
+- **Rehab planning** — milestone tracking, therapy scheduling, equipment needs
+- **AAC communication** — for patients who've lost the ability to speak
 
-A MACT petition takes a paralegal weeks. The work isn't the writing — it's
-reconciling three unrelated document streams into one coherent factual picture,
-then turning that into a petition where every rupee traces to a document.
+Today's demo shows the **legal agent**. The architecture generalizes to every spoke.
 
-| Stream | Establishes | Example documents |
-|--------|-------------|-------------------|
-| **police** | liability (who is at fault) | FIR, charge sheet |
-| **medical** | disability quantum | discharge summary, disability certificate, hospital bill |
-| **financial** | income loss | salary slip, Form 16 / ITR |
+## Architecture
 
-These disagree. The loop **catches cross-stream contradictions on its own** and
-parks them for a human instead of silently picking a winner.
+```
+Documents (9+)
+     │
+     ▼
+┌──────────┐    ┌─────────────┐    ┌──────────────┐    ┌───────────┐    ┌─────────────────┐
+│  Ingest  │───▶│  Reconcile  │───▶│  Verify KB   │───▶│   Draft   │───▶│ Verify Petition │
+│          │    │             │    │ (independent) │    │           │    │  (independent)  │
+│ Extract  │    │ Catch cross-│    │ Fresh context │    │ KB facts  │    │ Re-derive every │
+│ sourced  │    │ stream      │    │ 10 invariants │    │ only, cite│    │ number from     │
+│ facts    │    │ conflicts   │    │ No shared     │    │ fact IDs  │    │ scratch — reject│
+│ (struct) │    │             │    │ history       │    │           │    │ if wrong        │
+└──────────┘    └─────────────┘    └──────────────┘    └───────────┘    └────────┬────────┘
+                                                                                │
+                                                                    ◄───────────┘
+                                                              Autonomous revision loop:
+                                                              rejects → structured feedback
+                                                              → drafter revises (no human)
+```
+
+**12+ orchestrated Claude calls. 2 independent verification agents. Fresh-context
+separation — verifiers never see the drafter's history.**
+
+## The key insight: fresh-context verification
+
+The verifiers are not "checking the drafter's work" with access to the drafter's
+reasoning. They run as **separate model calls** whose context contains *only* the
+artifact being verified plus the grading rubric. No shared conversation history,
+no memory of extraction. This means:
+
+- A hallucinated citation can't hide behind plausible reasoning the verifier inherits
+- Arithmetic errors are caught deterministically (Python re-derivation, not LLM review)
+- If any check fails, the verifier sends structured feedback and the drafter revises autonomously
 
 ## Run it
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-export ANTHROPIC_API_KEY=sk-ant-...        # Build Day $500 credits
+export ANTHROPIC_API_KEY=sk-ant-...
 
 # Web app (the demo):
 uvicorn app:app --reload --port 8000        # open http://localhost:8000
@@ -52,8 +83,7 @@ arithmetic re-derivation shown beside the drafter's numbers**.
 Drop real documents into `data/{police,medical,financial}/` (any mix of
 `.pdf`, `.docx`, `.txt`, `.md`, `.json`, and images). PDFs and scan images are
 read **directly by the model's vision** — it OCRs the text and understands the
-document structure in one pass (better than tesseract for medical scans, forms,
-and handwriting). Large images are auto-downscaled so none are skipped.
+document structure in one pass. Large images are auto-downscaled so none are skipped.
 
 ```bash
 python -m scripts.run_real --list             # show what would be ingested (no API calls)
@@ -64,18 +94,13 @@ python -m scripts.run_real --max 20           # cap file count (cost control)
 ```
 
 **Every artifact from a real run is written to `data/_run/`, which is gitignored** —
-real PII is never committed. The public `knowledge/` directory is only ever
-written by the synthetic demo. The CLI prints field names and classification
-counts, not extracted values.
+real PII is never committed.
 
 ## Tests (no API key required)
 
-The deterministic engine and the full pipeline/SSE wiring are tested offline by
-stubbing the model calls:
-
 ```bash
-python -m scripts.selftest   # reconcile + invariants + precedent arithmetic
-python -m scripts.itest      # full pipeline + event stream, incl. inject→catch→revise
+python -m scripts.selftest   # reconcile + invariants + precedent arithmetic (21 checks)
+python -m scripts.itest      # full pipeline + SSE event stream (12 checks)
 ```
 
 `selftest` asserts the cross-stream accident-date contradiction is caught, the
@@ -83,57 +108,41 @@ income correction supersedes the preliminary CA certificate (prior value kept in
 history), and the loss of future earning re-derives to ₹9,36,00,000
 (`7200000 × 1.25 × 13 × 80%` — a self-employed claimant per the Pranay Sethi table).
 
+## Claude Code dynamic workflow
+
+The repo includes a `/verify-release` Claude Code workflow (`.claude/workflows/verify-release.md`)
+that fans out **5 parallel verification agents**:
+
+| Agent | What it checks |
+|-------|---------------|
+| selftest | Deterministic engine: reconciliation, invariants, arithmetic |
+| itest | Full pipeline + SSE event wiring, including inject → catch → revise |
+| rubric-auditor | KB + petition against both rubric files, every MUST graded |
+| deploy-checker | Live deployed endpoints: health, corpus, state, replay |
+| adversarial-verifier | Independent hunt for untraceable facts or arithmetic errors |
+
+A synthesis step merges all 5 into a PASS/FAIL release-readiness verdict.
+
 ## Deploy (Render or Railway)
 
 A single Python web service — no database, no build step.
 
-- **Render:** the repo includes [`render.yaml`](render.yaml). Create a Web Service
-  from the repo and set `ANTHROPIC_API_KEY` in the dashboard.
-- **Railway:** [`railway.json`](railway.json) / [`Procfile`](Procfile) set the start
-  command. Add `ANTHROPIC_API_KEY` as a variable.
+- **Render:** [`render.yaml`](render.yaml). Create a Web Service and set `ANTHROPIC_API_KEY`.
+- **Railway:** [`railway.json`](railway.json) / [`Procfile`](Procfile). Add `ANTHROPIC_API_KEY` as a variable.
 
-Start command (both): `uvicorn app:app --host 0.0.0.0 --port $PORT`.
-
-## How "done" is machine-checkable (orchestration)
-
-| Criterion | Where it's enforced |
-|-----------|---------------------|
-| KB self-maintains across all 3 streams | `src/reconcile.py` + the synthetic corpus |
-| ≥1 cross-stream contradiction caught, unprompted | logged in `knowledge/changelog.md` (marked **CONTRADICTION**) |
-| KB passes every invariant before commit | `src/verify_kb.py` grades `rubric/kb_invariants.md`; commit only on pass |
-| Petition uses **only** KB facts, each head citing fact ids | `src/draft_petition.py` (drafter reads the KB, never raw docs) |
-| Petition passes every MUST, arithmetic re-derived & matching | `src/verify_petition.py` grades `rubric/petition_rubric.md` |
-
-Drop a different case's documents into `/data/` and rerun the same loop against
-the same rubrics — nothing is hard-coded to this case.
-
-## Architecture
-
-```
-synthetic/ or data/   →  src/ingest.py     extract structured, sourced facts (LLM, JSON schema)
-                         src/reconcile.py  classify new/correction/contradiction/duplicate
-knowledge/case_record.json  ← single source of truth (facts[] + contradictions[] + changelog[])
-                         src/verify_kb.py  invariant gate + fresh-context LLM cross-check → commit on pass
-                         src/draft_petition.py  petition from KB facts only (LLM)
-                         src/verify_petition.py independent arithmetic (Python) + fresh-context LLM grading
-output/petition_draft.md     ← the deliverable      logs/  ← every verifier transcript
-```
-
-The verifiers run as **separate model calls with only the artifact + rubric in
-context** — no shared history with the drafter. The petition verifier re-derives
-the Sarla Verma / Pranay Sethi math in plain Python, so an arithmetic error in the
-draft is caught deterministically and fed back for revision.
+Start command: `uvicorn app:app --host 0.0.0.0 --port $PORT`.
 
 ## Layout
 
 ```
 /data/        GITIGNORED — real case documents, never committed
-/synthetic/   fake demo corpus (3 streams, 9 docs; fictional TBI/polytrauma case) + manifest.json
-/precedent/   case-law notes: Sarla Verma, Pranay Sethi, Kavin (citation flagged)
+/synthetic/   fake demo corpus (3 streams, 9 docs; fictional TBI/polytrauma case)
+/precedent/   case-law notes: Sarla Verma, Pranay Sethi, Kavin
 /rubric/      kb_invariants.md, petition_rubric.md — the grading targets
 /knowledge/   case_record.json, changelog.md (generated; committed as "done" evidence)
-/src/         pipeline modules        /static/  the web UI        /logs/  verifier transcripts
-/scripts/     selftest, itest, run
+/src/         pipeline modules        /static/  the web UI
+/scripts/     selftest, itest, run    /logs/    verifier transcripts
+/.claude/     workflows/ + agents/ — Claude Code dynamic orchestration
 ```
 
 ## Constraints
