@@ -3,238 +3,242 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Lexcompile — MACT petition drafter</title>
+<title>Lexcompile</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>%E2%9A%96%EF%B8%8F</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
 <style>
   :root{
-    --ink:#0a1f24; --ink-2:#33505a; --muted:#6c828b; --line:#e4ecea; --line-2:#eef4f2;
-    --bg:#eef2f1; --panel:#fff; --soft:#f4f8f7;
-    --police:#2f6fb0; --medical:#0f9d77; --financial:#bd7a1e;
-    --teal:#0e7c6b; --teal-d:#0a5b4f; --mint:#d7f3ea;
-    --pass:#0f8a5f; --pass-bg:#e3f5ec; --fail:#bc2f3f; --fail-bg:#fce8ea; --amber:#b6781a; --amber-bg:#fcf2dc; --disputed:#b85a23;
-    --r:14px; --r-sm:9px; --sh:0 1px 2px rgba(10,31,36,.05),0 10px 30px rgba(10,31,36,.05);
-    --sans:"Space Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+    --paper:#F6F4EE; --surface:#FFFFFF; --surface-2:#FBFAF6;
+    --ink:#1C1A16; --ink-2:#5A554C; --muted:#928C80; --line:#E8E3D8; --line-2:#F0ECE2;
+    --accent:#1C1A16; --accent-soft:#EFEADF; --link:#7A4A24;
+    --police:#3B6EA5; --medical:#2C7D6A; --financial:#A9742F;
+    --pass:#3E7B55; --pass-bg:#EAF1EA; --fail:#A8423B; --fail-bg:#F8EAE9; --amber:#9E6E1E; --amber-bg:#F6EFDD; --disputed:#A55C24;
+    --r:12px; --r-sm:9px;
+    --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --serif:"Newsreader",Georgia,"Times New Roman",serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1280px;margin:0 auto;padding:0 22px}
-  /* top bar */
-  .topbar{background:var(--ink);color:#eafaf6;position:sticky;top:0;z-index:30}
-  .topbar .row{display:flex;align-items:center;gap:14px;min-height:62px;flex-wrap:wrap;row-gap:8px;padding:9px 0}
-  .brand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:17px;letter-spacing:.2px}
-  .brand i{color:var(--mint);font-size:22px}
-  nav.tabs{display:flex;gap:4px;margin-left:8px;flex:1;flex-wrap:wrap}
-  .navtab{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;color:#a9cdc7;cursor:pointer;font-size:14px;font-weight:500;border:0;background:transparent}
-  .navtab i{font-size:17px}
-  .navtab:hover{background:rgba(255,255,255,.07);color:#eafaf6}
-  .navtab.active{background:var(--mint);color:var(--teal-d)}
-  .topbtns{display:flex;gap:9px;align-items:center}
-  button.btn{font-family:var(--sans);border:0;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;padding:9px 16px;display:flex;align-items:center;gap:7px}
-  button.primary{background:var(--mint);color:var(--teal-d)} button.primary:hover{background:#c5ece1}
-  button.ghost{background:rgba(255,255,255,.09);color:#dff3ee;border:1px solid rgba(255,255,255,.16)} button.ghost:hover{background:rgba(255,255,255,.16)}
-  button:disabled{opacity:.45;cursor:not-allowed}
-  /* sub control row */
-  .subbar{background:var(--panel);border-bottom:1px solid var(--line)}
-  .subbar .row{display:flex;align-items:center;gap:16px;min-height:48px;padding:7px 0;font-size:13px;color:var(--ink-2);flex-wrap:wrap}
-  .toggle{display:flex;align-items:center;gap:7px} .toggle input{accent-color:var(--teal)}
-  .status{margin-left:auto;display:flex;align-items:center;gap:7px;color:var(--ink-2)}
-  .spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--teal);border-radius:50%;animation:s .7s linear infinite}
-  @keyframes s{to{transform:rotate(360deg)}}
-  .dot{width:7px;height:7px;border-radius:50%}
-  main{padding:24px 0 60px}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;font-size:15px}
+  .app{display:flex;min-height:100vh}
+  /* sidebar */
+  aside.side{width:248px;flex:0 0 248px;background:var(--surface);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:18px;letter-spacing:-.2px;padding:22px 22px 18px}
+  .brand i{font-size:22px;color:var(--ink)}
+  .navlist{display:flex;flex-direction:column;gap:2px;padding:6px 12px}
+  .navtab{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:var(--ink-2);cursor:pointer;
+    font-size:14.5px;font-weight:500;border:0;background:transparent;text-align:left;width:100%}
+  .navtab i{font-size:18px;color:var(--muted)}
+  .navtab:hover{background:var(--surface-2);color:var(--ink)}
+  .navtab.active{background:var(--accent-soft);color:var(--ink)} .navtab.active i{color:var(--ink)}
+  .sideactions{margin-top:auto;padding:14px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:9px}
+  button.btn{font-family:var(--sans);border:0;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;padding:11px 14px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+  button.primary{background:var(--accent);color:#fff} button.primary:hover{background:#322e27}
+  button.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)} button.ghost:hover{background:var(--surface-2)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);padding:0 2px} .toggle input{accent-color:var(--accent)}
+  .sidemeta{padding:12px 18px 18px;font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--line)}
+  .sidemeta a{color:var(--link);text-decoration:none}
+  .mstat{display:flex;align-items:center;gap:6px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)} .dot.ok{background:var(--pass)} .dot.no{background:var(--fail)}
+  /* content */
+  .content{flex:1;min-width:0}
+  .inner{max-width:1080px;margin:0 auto;padding:36px 44px 70px}
   .pane{display:none;animation:fade .35s ease} .pane.active{display:block}
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:26px 0 12px;font-weight:600}
-  .lead{font-size:21px;font-weight:500;letter-spacing:-.2px;max-width:760px;margin:4px 0 0;line-height:1.35}
-  .lead b{color:var(--teal-d)}
-  /* stat chips */
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0 6px}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
-  .stat .v{font-size:22px;font-weight:700;color:var(--ink)} .stat .l{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px}
-  .stat .l i{color:var(--teal)}
-  /* stage pipeline */
-  .pipe{display:flex;align-items:stretch;gap:0;margin:8px 0 6px;flex-wrap:wrap}
-  .node{flex:1;min-width:120px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px;position:relative;opacity:.5;transition:.3s}
-  .node .ic{width:42px;height:42px;border-radius:50%;background:var(--soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--muted)}
+  .phead{margin:0 0 4px;font-size:15px;font-weight:600;color:var(--ink)}
+  .lead{font-family:var(--serif);font-size:27px;line-height:1.28;font-weight:400;letter-spacing:-.3px;max-width:680px;margin:0 0 6px}
+  .lead em{font-style:italic;color:var(--link)}
+  .subt{color:var(--ink-2);font-size:14.5px;margin:0 0 26px;max-width:600px}
+  h2.sec{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:30px 0 13px;font-weight:600}
+  .statusline{font-size:13px;color:var(--ink-2);display:flex;align-items:center;gap:8px;min-height:18px;margin-bottom:18px}
+  .spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:s .7s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+  /* stats — editorial row, hairline separators */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden;margin-bottom:8px}
+  .stat{padding:16px 18px;border-right:1px solid var(--line-2)}
+  .stat:last-child{border-right:0}
+  .stat .v{font-size:23px;font-weight:600;letter-spacing:-.5px} .stat .l{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px}
+  /* pipeline */
+  .pipe{display:flex;align-items:flex-start;margin:22px 0 8px;flex-wrap:wrap}
+  .node{flex:1;min-width:110px;display:flex;flex-direction:column;align-items:center;gap:9px;padding:6px;position:relative;opacity:.45;transition:.3s}
+  .node .ic{width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--muted)}
   .node .nl{font-size:12.5px;font-weight:500;color:var(--ink-2)}
-  .node:not(:last-child)::after{content:"";position:absolute;top:35px;right:-50%;width:100%;height:2px;background:var(--line);z-index:-1}
-  .node.active{opacity:1} .node.active .ic{border-color:var(--teal);color:var(--teal);box-shadow:0 0 0 4px var(--mint)}
-  .node.done{opacity:1} .node.done .ic{background:var(--pass-bg);border-color:var(--pass);color:var(--pass)}
+  .node:not(:last-child)::after{content:"";position:absolute;top:33px;right:-50%;width:100%;height:1px;background:var(--line);z-index:-1}
+  .node.active{opacity:1} .node.active .ic{border-color:var(--ink);color:var(--ink)}
+  .node.done{opacity:1} .node.done .ic{background:var(--ink);border-color:var(--ink);color:#fff}
   .node.failed{opacity:1} .node.failed .ic{background:var(--fail-bg);border-color:var(--fail);color:var(--fail)}
   /* grid */
-  .grid{display:grid;grid-template-columns:1.05fr 1.25fr .9fr;gap:16px}
+  .grid{display:grid;grid-template-columns:1.05fr 1.2fr .85fr;gap:18px}
   @media(max-width:1000px){.grid{grid-template-columns:1fr}}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:15px}
-  .cardhead{display:flex;align-items:center;gap:8px;font-size:12.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600;margin-bottom:11px}
-  .cardhead i{font-size:16px;color:var(--teal)}
-  .doc{border-radius:var(--r-sm);padding:10px 12px;margin-bottom:9px;background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--line);animation:fade .35s ease}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:17px 18px}
+  .cardhead{display:flex;align-items:center;gap:8px;font-size:11.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);font-weight:600;margin-bottom:13px}
+  .cardhead i{font-size:15px;color:var(--ink-2)}
+  .doc{border-radius:var(--r-sm);padding:11px 13px;margin-bottom:9px;background:var(--surface-2);border:1px solid var(--line-2);border-left:3px solid var(--line);animation:fade .35s ease}
   .doc.police{border-left-color:var(--police)} .doc.medical{border-left-color:var(--medical)} .doc.financial{border-left-color:var(--financial)}
-  .doc .dt{font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:6px} .doc .ds{font-size:11.5px;color:var(--muted);margin-top:1px}
-  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
-  .chip{font-size:10.5px;padding:2px 8px;border-radius:6px;background:#eef2f2;color:var(--ink-2);border:1px solid var(--line);font-weight:500}
-  .chip.new{background:#e6f4ee;color:#0c6b52;border-color:#bfe6d8}
-  .chip.correction{background:#e9eefb;color:#274b86;border-color:#cad9f4}
-  .chip.contradiction{background:var(--amber-bg);color:var(--amber);border-color:#eed9a6}
-  .chip.duplicate,.chip.correction_skipped,.chip.skipped_off_stream{background:#f0f1f1;color:#8a8a8a}
+  .doc .dt{font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:7px} .doc .ds{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  .chip{font-size:10.5px;padding:2px 8px;border-radius:6px;background:var(--surface);color:var(--ink-2);border:1px solid var(--line);font-weight:500}
+  .chip.new{background:var(--pass-bg);color:#2c5b3d;border-color:#cfe2d2}
+  .chip.correction{background:#e9eef6;color:#2c4f7a;border-color:#cdd9e9}
+  .chip.contradiction{background:var(--amber-bg);color:var(--amber);border-color:#ead9b0}
+  .chip.duplicate,.chip.correction_skipped,.chip.skipped_off_stream{background:var(--surface-2);color:var(--muted)}
   table{width:100%;border-collapse:collapse;font-size:12.5px}
   th,td{text-align:left;padding:7px 7px;border-bottom:1px solid var(--line-2);vertical-align:top}
   th{color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px}
-  td.fid{font-family:var(--mono);color:var(--teal-d);font-size:11px;white-space:nowrap}
-  tr.factrow{transition:background .25s} tr.flash{background:#fff4d6}
-  .sdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  td.fid{font-family:var(--mono);color:var(--ink-2);font-size:11px;white-space:nowrap}
+  tr.factrow{transition:background .25s} tr.flash{background:#f7eccb}
+  .sdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
   .sdot.police{background:var(--police)} .sdot.medical{background:var(--medical)} .sdot.financial{background:var(--financial)}
-  .flag{font-size:9.5px;padding:1px 6px;border-radius:5px;background:var(--amber-bg);color:var(--amber);border:1px solid #eed9a6;margin-left:5px}
-  .cpanel{border:1.5px dashed var(--line);border-radius:var(--r-sm);padding:14px;color:var(--muted);font-size:12.5px;text-align:center}
+  .flag{font-size:9.5px;padding:1px 6px;border-radius:5px;background:var(--amber-bg);color:var(--amber);border:1px solid #ead9b0;margin-left:5px}
+  .cpanel{border:1px dashed var(--line);border-radius:var(--r-sm);padding:15px;color:var(--muted);font-size:12.5px;text-align:center}
   .cpanel.hit{border:1px solid var(--disputed);background:var(--amber-bg);color:var(--ink);text-align:left;animation:pop .45s ease}
-  @keyframes pop{0%{transform:scale(.96)}55%{transform:scale(1.02)}100%{transform:scale(1)}}
-  .cd{margin-top:8px;padding:11px;border-radius:var(--r-sm);background:#fff;border:1px solid #eed9a6}
-  .cd .cf{font-weight:600;color:var(--disputed);display:flex;align-items:center;gap:6px} .cd .cv{font-size:12px;margin-top:5px}
+  @keyframes pop{0%{transform:scale(.97)}55%{transform:scale(1.02)}100%{transform:scale(1)}}
+  .cd{margin-top:8px;padding:12px;border-radius:var(--r-sm);background:var(--surface);border:1px solid #ead9b0}
+  .cd .cf{font-weight:600;color:var(--disputed);display:flex;align-items:center;gap:7px} .cd .cv{font-size:12.5px;margin-top:5px}
   .timeline{list-style:none;margin:0;padding:0;font-size:12px;max-height:560px;overflow:auto}
-  .timeline li{padding:7px 0 7px 17px;border-left:2px solid var(--line);position:relative;animation:fade .3s ease}
-  .timeline li::before{content:"";position:absolute;left:-5px;top:11px;width:8px;height:8px;border-radius:50%;background:var(--line)}
-  .timeline li.contradiction::before{background:var(--disputed)} .timeline li.correction::before{background:var(--police)} .timeline li.ingest_new::before{background:var(--pass)}
+  .timeline li{padding:7px 0 7px 17px;border-left:1px solid var(--line);position:relative;animation:fade .3s ease}
+  .timeline li::before{content:"";position:absolute;left:-4px;top:11px;width:7px;height:7px;border-radius:50%;background:var(--line)}
+  .timeline li.contradiction::before{background:var(--disputed)} .timeline li.correction::before{background:var(--police)} .timeline li.ingest_new::before{background:var(--medical)}
   .timeline .act{font-weight:600;text-transform:uppercase;font-size:9.5px;letter-spacing:.4px;color:var(--muted)}
   .timeline li.contradiction .act{color:var(--disputed)} .timeline .sm{color:var(--ink-2)}
   /* verdict */
-  .pill{font-size:12.5px;font-weight:600;padding:4px 13px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+  .pill{font-size:12.5px;font-weight:600;padding:5px 13px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
   .pill.pass{background:var(--pass-bg);color:var(--pass)} .pill.fail{background:var(--fail-bg);color:var(--fail)}
-  .checks{display:grid;grid-template-columns:1fr 1fr;gap:5px 18px;font-size:12px;margin-top:6px}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:6px 22px;font-size:12.5px;margin-top:8px}
   @media(max-width:680px){.checks{grid-template-columns:1fr}}
-  .check{display:flex;gap:7px;align-items:baseline}
+  .check{display:flex;gap:8px;align-items:baseline}
   .check .m{font-weight:600;font-family:var(--mono);font-size:11px}
   .check.PASS .m{color:var(--pass)} .check.FAIL .m{color:var(--fail)} .check.UNGRADED .m{color:var(--muted)}
   .check .nt{color:var(--ink-2)}
-  .arith{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  .arith{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
   @media(max-width:680px){.arith{grid-template-columns:1fr}}
-  .abox{background:var(--soft);border:1px solid var(--line);border-radius:var(--r-sm);padding:13px}
-  .abox h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600}
-  .arow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:5px 0;font-size:13px}
-  .num{font-family:var(--mono);font-weight:600}
+  .abox{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:15px}
+  .abox h4{margin:0 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:600}
+  .arow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:7px 0;font-size:13.5px}
+  .num{font-family:var(--mono);font-weight:500}
   .match{color:var(--pass);font-weight:600} .mismatch{color:var(--fail);font-weight:600}
   /* petition */
-  .doc-view{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:34px 42px;box-shadow:var(--sh);
-    font-family:Georgia,"Times New Roman",serif;font-size:14.5px;color:#1b1b1b;max-height:760px;overflow:auto}
-  .doc-view h1{font-size:20px;text-align:center} .doc-view h2{font-size:16px;border-bottom:1px solid #eee;padding-bottom:4px;margin-top:22px}
-  .doc-view h3{font-size:14.5px} .doc-view table{font-family:var(--sans);font-size:12.5px;margin:10px 0}
-  .doc-view th,.doc-view td{border:1px solid #e6e6e6;padding:6px 9px}
-  .doc-view code{background:#eef3f2;padding:1px 5px;border-radius:4px;font-size:12px;color:var(--teal-d);font-family:var(--mono)}
-  .doc-view blockquote{border-left:3px solid var(--amber);margin:10px 0;padding:4px 14px;background:var(--amber-bg);color:#5a3a12;font-size:13.5px}
-  .fcite{background:#e9eefb;color:#274b86;border:1px solid #cad9f4;border-radius:5px;padding:0 4px;font-family:var(--mono);font-size:11px;cursor:pointer} .fcite:hover{background:#d6e1fb}
-  .feedback{background:var(--fail-bg);border:1px solid #f1c4cb;border-radius:var(--r-sm);padding:11px;font-size:12.5px;color:#7a1f2b;white-space:pre-wrap;margin-top:8px}
-  .attempt-tag{font-size:11.5px;color:var(--muted);margin-bottom:7px}
-  .empty{color:var(--muted);font-size:12.5px;padding:6px 0}
-  .injected{background:var(--amber-bg);border:1px solid #eed9a6;color:var(--amber);font-size:12.5px;padding:9px 12px;border-radius:var(--r-sm);margin-bottom:11px;display:flex;align-items:center;gap:7px}
-  /* evidence subtabs */
-  .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-  .stab{font-size:13px;padding:8px 15px;border-radius:10px;border:1px solid var(--line);background:var(--panel);cursor:pointer;color:var(--ink-2);font-weight:500;display:flex;align-items:center;gap:6px}
-  .stab.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .doc-view{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:46px 56px;margin:0 auto;max-width:780px;
+    font-family:var(--serif);font-size:16px;line-height:1.65;color:#211f1a;max-height:none}
+  .doc-view h1{font-size:21px;text-align:center;font-weight:500} .doc-view h2{font-size:16px;border-bottom:1px solid var(--line-2);padding-bottom:5px;margin-top:26px;font-weight:500}
+  .doc-view h3{font-size:15px;font-weight:600} .doc-view table{font-family:var(--sans);font-size:12.5px;margin:12px 0}
+  .doc-view th,.doc-view td{border:1px solid var(--line);padding:7px 10px}
+  .doc-view code{background:var(--surface-2);padding:1px 5px;border-radius:4px;font-size:12.5px;color:var(--link);font-family:var(--mono)}
+  .doc-view blockquote{border-left:3px solid var(--amber);margin:12px 0;padding:6px 16px;background:var(--amber-bg);color:#5a3a12;font-size:14.5px;border-radius:0}
+  .fcite{background:#e9eef6;color:#2c4f7a;border:1px solid #cdd9e9;border-radius:5px;padding:0 4px;font-family:var(--mono);font-size:11px;cursor:pointer} .fcite:hover{background:#dae3f0}
+  .feedback{background:var(--fail-bg);border:1px solid #eccac7;border-radius:var(--r-sm);padding:12px;font-size:12.5px;color:#7a1f2b;white-space:pre-wrap;margin-top:8px}
+  .attempt-tag{font-size:11.5px;color:var(--muted);margin-bottom:8px}
+  .empty{color:var(--muted);font-size:13px;padding:8px 0}
+  .injected{background:var(--amber-bg);border:1px solid #ead9b0;color:var(--amber);font-size:12.5px;padding:10px 13px;border-radius:var(--r-sm);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  /* evidence */
+  .subtabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+  .stab{font-size:13.5px;padding:8px 15px;border-radius:9px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink-2);font-weight:500;display:flex;align-items:center;gap:7px}
+  .stab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
   .spane{display:none} .spane.active{display:block}
-  details.item{border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 13px;margin-bottom:9px;background:var(--panel)}
-  details.item summary{cursor:pointer;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px}
+  details.item{border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 14px;margin-bottom:9px;background:var(--surface)}
+  details.item summary{cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px}
   details.item .meta{font-size:11.5px;color:var(--muted);font-weight:400}
-  pre.src{white-space:pre-wrap;background:#0c2127;color:#cfe6e2;padding:13px;border-radius:var(--r-sm);font-size:11.5px;margin-top:9px;max-height:380px;overflow:auto;font-family:var(--mono);line-height:1.5}
-  .mdnote{font-size:13.5px} .mdnote table{font-size:12.5px;border-collapse:collapse} .mdnote th,.mdnote td{border:1px solid var(--line);padding:5px 8px}
+  pre.src{white-space:pre-wrap;background:#23211c;color:#e7e1d4;padding:14px;border-radius:var(--r-sm);font-size:11.5px;margin-top:10px;max-height:380px;overflow:auto;font-family:var(--mono);line-height:1.55}
+  .mdnote{font-size:14px} .mdnote table{font-size:12.5px;border-collapse:collapse} .mdnote th,.mdnote td{border:1px solid var(--line);padding:6px 9px} .mdnote h1{font-size:18px} .mdnote h2{font-size:15px}
   /* real */
-  .callout{background:var(--mint);border:1px solid #bfe6d9;border-radius:var(--r);padding:14px 16px;font-size:13.5px;color:#0a463f;display:flex;gap:10px;align-items:flex-start}
-  .callout i{font-size:20px;color:var(--teal-d);margin-top:1px}
-  .realgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:14px}
-  .rstat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:15px}
-  .rstat .v{font-size:24px;font-weight:700;color:var(--teal-d)} .rstat .l{font-size:12px;color:var(--muted);margin-top:3px}
-  .badge{font-size:11px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.1);color:#cfe6e2;border:1px solid rgba(255,255,255,.16)}
-  .badge.ok{background:rgba(95,227,196,.22);color:#bff0e0;border-color:rgba(95,227,196,.4)}
-  .badge.no{background:rgba(188,47,63,.28);color:#f6c9cf;border-color:rgba(188,47,63,.5)}
-  footer{color:var(--muted);font-size:12px;padding:20px 0 40px;border-top:1px solid var(--line);margin-top:30px}
+  .callout{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--medical);border-radius:0 var(--r) var(--r) 0;padding:16px 18px;font-size:14.5px;color:var(--ink-2);display:flex;gap:12px;align-items:flex-start}
+  .callout i{font-size:20px;color:var(--medical);margin-top:1px}
+  .realgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:16px}
+  .rstat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:17px}
+  .rstat .v{font-size:24px;font-weight:600;letter-spacing:-.5px} .rstat .l{font-size:12px;color:var(--muted);margin-top:4px}
+  /* responsive: sidebar -> top */
+  @media(max-width:900px){
+    .app{flex-direction:column}
+    aside.side{width:auto;flex:none;height:auto;position:sticky;top:0;border-right:0;border-bottom:1px solid var(--line);z-index:30}
+    .brand{padding:14px 18px}
+    .navlist{flex-direction:row;flex-wrap:wrap;padding:0 12px 10px}
+    .sideactions{flex-direction:row;margin-top:0;border-top:0;padding:0 14px 12px}
+    .sidemeta{flex-direction:row;flex-wrap:wrap;gap:12px}
+    .inner{padding:24px 20px 60px}
+  }
 </style>
 </head>
 <body>
-<div class="topbar"><div class="wrap row">
-  <div class="brand"><i class="ti ti-scale"></i> Lexcompile</div>
-  <nav class="tabs">
-    <button class="navtab active" data-pane="run"><i class="ti ti-player-play"></i> Run</button>
-    <button class="navtab" data-pane="petition"><i class="ti ti-file-text"></i> Petition</button>
-    <button class="navtab" data-pane="evidence"><i class="ti ti-folders"></i> Evidence</button>
-    <button class="navtab" data-pane="real"><i class="ti ti-briefcase"></i> Real case</button>
-  </nav>
-  <div class="topbtns">
-    <button class="btn primary" id="replayBtn"><i class="ti ti-player-play"></i> Replay</button>
-    <button class="btn ghost" id="liveBtn"><i class="ti ti-bolt"></i> Run live</button>
-  </div>
-</div></div>
-
-<div class="subbar"><div class="wrap row">
-  <span class="badge" id="modelBadge">model …</span>
-  <span class="badge" id="keyBadge">key …</span>
-  <label class="toggle"><input type="checkbox" id="injectBox" /> Inject an error</label>
-  <a class="badge" id="repoBadge" href="#" target="_blank" rel="noopener"><i class="ti ti-brand-github"></i> Source</a>
-  <span class="status" id="status"></span>
-</div></div>
-
-<main class="wrap">
-  <!-- RUN -->
-  <section class="pane active" id="pane-run">
-    <p class="lead">A motor-accident compensation petition takes a paralegal <b>weeks</b>. Lexcompile builds it autonomously — and <b>verifies its own arithmetic</b>.</p>
-    <div class="stats" id="statstrip"></div>
-
-    <div class="pipe" id="stages">
-      <div class="node" data-k="ingest"><div class="ic"><i class="ti ti-file-import"></i></div><div class="nl">Ingest</div></div>
-      <div class="node" data-k="reconcile"><div class="ic"><i class="ti ti-git-merge"></i></div><div class="nl">Reconcile</div></div>
-      <div class="node" data-k="verify_kb"><div class="ic"><i class="ti ti-shield-check"></i></div><div class="nl">Verify KB</div></div>
-      <div class="node" data-k="draft"><div class="ic"><i class="ti ti-writing"></i></div><div class="nl">Draft</div></div>
-      <div class="node" data-k="verify_petition"><div class="ic"><i class="ti ti-checkup-list"></i></div><div class="nl">Verify petition</div></div>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><i class="ti ti-scale"></i> Lexcompile</div>
+    <div class="navlist">
+      <button class="navtab active" data-pane="run"><i class="ti ti-player-play"></i> Run</button>
+      <button class="navtab" data-pane="petition"><i class="ti ti-file-text"></i> Petition</button>
+      <button class="navtab" data-pane="evidence"><i class="ti ti-folders"></i> Evidence</button>
+      <button class="navtab" data-pane="real"><i class="ti ti-briefcase"></i> Real case</button>
     </div>
-
-    <div class="grid">
-      <div>
-        <div class="card"><div class="cardhead"><i class="ti ti-files"></i> Documents</div>
-          <div id="docs"><div class="empty">Press Replay to ingest the three streams.</div></div></div>
-      </div>
-      <div>
-        <div class="card"><div class="cardhead"><i class="ti ti-database"></i> Knowledge base</div>
-          <div id="facts"><div class="empty">No facts yet.</div></div></div>
-        <div class="card"><div class="cardhead"><i class="ti ti-alert-triangle"></i> Contradictions</div>
-          <div id="contradictions" class="cpanel">Cross-stream conflicts park here.</div></div>
-      </div>
-      <div>
-        <div class="card"><div class="cardhead"><i class="ti ti-history"></i> Changelog</div>
-          <ul id="timeline" class="timeline"><li class="empty">Mutations appear here.</li></ul></div>
-      </div>
+    <div class="sideactions">
+      <button class="btn primary" id="replayBtn"><i class="ti ti-player-play"></i> Replay</button>
+      <button class="btn ghost" id="liveBtn"><i class="ti ti-bolt"></i> Run live on Opus</button>
+      <label class="toggle"><input type="checkbox" id="injectBox" /> Inject an arithmetic error</label>
     </div>
-
-    <h2 class="sec">KB verification · fresh context</h2>
-    <div class="card" id="kbVerify"><div class="empty">Graded before the KB is committed.</div></div>
-  </section>
-
-  <!-- PETITION -->
-  <section class="pane" id="pane-petition">
-    <h2 class="sec">Petition verification · arithmetic re-derived</h2>
-    <div class="card" id="petVerify"><div class="empty">Run the loop to verify a petition.</div></div>
-    <h2 class="sec">Drafted petition · click a <span style="font-family:var(--mono)">[F##]</span> to trace it</h2>
-    <div id="petitionWrap"><div class="empty">Drafted once the KB passes.</div></div>
-  </section>
-
-  <!-- EVIDENCE -->
-  <section class="pane" id="pane-evidence">
-    <div class="subtabs">
-      <div class="stab active" data-stab="docs"><i class="ti ti-file-description"></i> Documents</div>
-      <div class="stab" data-stab="prec"><i class="ti ti-gavel"></i> Precedents</div>
-      <div class="stab" data-stab="logs"><i class="ti ti-clipboard-check"></i> Verifier transcripts</div>
+    <div class="sidemeta">
+      <span class="mstat" id="modelBadge"><span class="dot"></span> model …</span>
+      <span class="mstat" id="keyBadge"><span class="dot"></span> key …</span>
+      <a id="repoBadge" href="#" target="_blank" rel="noopener"><i class="ti ti-brand-github"></i> Source on GitHub</a>
     </div>
-    <div class="spane active" id="tab-docs"><div class="empty">Loading…</div></div>
-    <div class="spane" id="tab-prec"><div class="empty">Loading…</div></div>
-    <div class="spane" id="tab-logs"><div class="empty">Loading…</div></div>
-  </section>
+  </aside>
 
-  <!-- REAL -->
-  <section class="pane" id="pane-real">
-    <div id="realPanel"><div class="empty">Loading…</div></div>
-  </section>
+  <div class="content"><div class="inner">
+    <!-- RUN -->
+    <section class="pane active" id="pane-run">
+      <p class="lead">A motor-accident compensation petition takes a paralegal <em>weeks</em>.</p>
+      <p class="subt">Lexcompile ingests the documents, reconciles them into one self-consistent knowledge base, drafts the petition from facts only, and re-derives every figure independently — on claude-opus-4-8.</p>
+      <div class="statusline" id="status"></div>
+      <div class="stats" id="statstrip"></div>
 
-  <footer>Synthetic, fictional case. Real documents live in <code>/data/</code> (gitignored) and are never committed; real-run output stays in <code>data/_run/</code>. Model: claude-opus-4-8.</footer>
-</main>
+      <div class="pipe" id="stages">
+        <div class="node" data-k="ingest"><div class="ic"><i class="ti ti-file-import"></i></div><div class="nl">Ingest</div></div>
+        <div class="node" data-k="reconcile"><div class="ic"><i class="ti ti-git-merge"></i></div><div class="nl">Reconcile</div></div>
+        <div class="node" data-k="verify_kb"><div class="ic"><i class="ti ti-shield-check"></i></div><div class="nl">Verify KB</div></div>
+        <div class="node" data-k="draft"><div class="ic"><i class="ti ti-writing"></i></div><div class="nl">Draft</div></div>
+        <div class="node" data-k="verify_petition"><div class="ic"><i class="ti ti-checkup-list"></i></div><div class="nl">Verify petition</div></div>
+      </div>
+
+      <div class="grid">
+        <div><div class="card"><div class="cardhead"><i class="ti ti-files"></i> Documents</div><div id="docs"><div class="empty">Press Replay to ingest.</div></div></div></div>
+        <div>
+          <div class="card"><div class="cardhead"><i class="ti ti-database"></i> Knowledge base</div><div id="facts"><div class="empty">No facts yet.</div></div></div>
+          <div class="card" style="margin-top:18px"><div class="cardhead"><i class="ti ti-alert-triangle"></i> Contradictions</div><div id="contradictions" class="cpanel">Cross-stream conflicts park here.</div></div>
+        </div>
+        <div><div class="card"><div class="cardhead"><i class="ti ti-history"></i> Changelog</div><ul id="timeline" class="timeline"><li class="empty">Mutations appear here.</li></ul></div></div>
+      </div>
+
+      <h2 class="sec">KB verification · fresh context</h2>
+      <div class="card" id="kbVerify"><div class="empty">Graded before the KB is committed.</div></div>
+    </section>
+
+    <!-- PETITION -->
+    <section class="pane" id="pane-petition">
+      <h2 class="sec">Verification · arithmetic re-derived</h2>
+      <div class="card" id="petVerify"><div class="empty">Run the loop to verify a petition.</div></div>
+      <h2 class="sec">Drafted petition · click a <span style="font-family:var(--mono)">[F##]</span> to trace it</h2>
+      <div id="petitionWrap"><div class="empty">Drafted once the KB passes.</div></div>
+    </section>
+
+    <!-- EVIDENCE -->
+    <section class="pane" id="pane-evidence">
+      <div class="subtabs">
+        <div class="stab active" data-stab="docs"><i class="ti ti-file-description"></i> Documents</div>
+        <div class="stab" data-stab="prec"><i class="ti ti-gavel"></i> Precedents</div>
+        <div class="stab" data-stab="logs"><i class="ti ti-clipboard-check"></i> Verifier transcripts</div>
+      </div>
+      <div class="spane active" id="tab-docs"><div class="empty">Loading…</div></div>
+      <div class="spane" id="tab-prec"><div class="empty">Loading…</div></div>
+      <div class="spane" id="tab-logs"><div class="empty">Loading…</div></div>
+    </section>
+
+    <!-- REAL -->
+    <section class="pane" id="pane-real">
+      <div id="realPanel"><div class="empty">Loading…</div></div>
+    </section>
+  </div></div>
+</div>
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
@@ -243,7 +247,6 @@ const fmt=n=>(n==null||isNaN(n))?String(n):Number(n).toLocaleString("en-IN");
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const sIcon=s=>({police:"ti-shield",medical:"ti-stethoscope",financial:"ti-currency-rupee"}[s]||"ti-file");
 let TRACE=null, busy=false;
-
 function md(src){
   const lines=src.replace(/\r/g,"").split("\n");let html="",i=0,inList=false;
   const inline=t=>esc(t).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/`([^`]+?)`/g,"<code>$1</code>").replace(/(^|[^*])\*(?!\s)([^*]+?)\*/g,"$1<em>$2</em>");
@@ -263,15 +266,12 @@ function md(src){
     i++;}
   close();return html;
 }
-/* tabs */
-function showPane(name){$$(".navtab").forEach(t=>t.classList.toggle("active",t.dataset.pane===name));$$(".pane").forEach(p=>p.classList.toggle("active",p.id==="pane-"+name));window.scrollTo({top:0,behavior:"smooth"});}
+function showPane(name){$$(".navtab").forEach(t=>t.classList.toggle("active",t.dataset.pane===name));$$(".pane").forEach(p=>p.classList.toggle("active",p.id==="pane-"+name));const c=$(".content");if(c)c.scrollIntoView({block:"start"});window.scrollTo({top:0,behavior:"smooth"});}
 $$(".navtab").forEach(t=>t.addEventListener("click",()=>showPane(t.dataset.pane)));
 $$(".stab").forEach(t=>t.addEventListener("click",()=>{$$(".stab").forEach(x=>x.classList.remove("active"));t.classList.add("active");$$(".spane").forEach(p=>p.classList.remove("active"));$("#tab-"+t.dataset.stab).classList.add("active");}));
-/* stages */
 function setStage(k,cls){const el=document.querySelector(`.node[data-k="${k}"]`);if(el)el.className="node "+cls;}
 function resetStages(){["ingest","reconcile","verify_kb","draft","verify_petition"].forEach(k=>setStage(k,""));}
 function setStatus(t,w){$("#status").innerHTML=(w?'<span class="spin"></span>':'')+esc(t);}
-/* renderers */
 function renderDocs(docs){
   if(!docs.length){$("#docs").innerHTML='<div class="empty">…</div>';return;}
   $("#docs").innerHTML=docs.map(d=>{
@@ -299,7 +299,7 @@ function renderTimeline(rec){
 function renderRecord(rec){renderFacts(rec);renderContradictions(rec);renderTimeline(rec);}
 function renderKbVerify(v){
   const pass=v.result==="PASS";
-  $("#kbVerify").innerHTML=`<div style="margin-bottom:10px"><span class="pill ${pass?'pass':'fail'}"><i class="ti ti-${pass?'shield-check':'shield-x'}"></i> ${pass?'PASS — committed':'FAIL'}</span></div><div class="checks">`+(v.must||[]).map(c=>`<div class="check ${c.status}"><span class="m">${esc(c.id)} ${c.status==='PASS'?'✓':'✗'}</span><span class="nt">${esc(c.note)}</span></div>`).join("")+`</div>`;
+  $("#kbVerify").innerHTML=`<div style="margin-bottom:11px"><span class="pill ${pass?'pass':'fail'}"><i class="ti ti-${pass?'shield-check':'shield-x'}"></i> ${pass?'Passed — committed':'Failed'}</span></div><div class="checks">`+(v.must||[]).map(c=>`<div class="check ${c.status}"><span class="m">${esc(c.id)} ${c.status==='PASS'?'✓':'✗'}</span><span class="nt">${esc(c.note)}</span></div>`).join("")+`</div>`;
 }
 function petitionHtml(p){return md(p).replace(/\[F(\d+)\]/g,(m,n)=>`<span class="fcite" data-fid="F${n.padStart(3,'0')}">[F${n}]</span>`);}
 function wireCites(){$$(".fcite").forEach(el=>el.addEventListener("click",()=>{showPane("run");const row=document.getElementById("fact-"+el.dataset.fid);if(row){row.scrollIntoView({block:"center",behavior:"smooth"});row.classList.add("flash");setTimeout(()=>row.classList.remove("flash"),1400);}}));}
@@ -309,10 +309,10 @@ function renderAttempt(att){
   const pass=att.result==="pass",rc=att.arithmetic.recomputed,cl=att.arithmetic.petition_claimed||{};
   const loss=rc.loss_of_future_earning,med=rc.medical_expenses;
   const lm=loss&&cl.loss_of_earning!=null&&Number(cl.loss_of_earning)===loss.amount, mm=med&&cl.medical_expenses!=null&&Number(cl.medical_expenses)===med.amount;
-  let h=`<div style="margin-bottom:10px"><span class="pill ${pass?'pass':'fail'}"><i class="ti ti-${pass?'circle-check':'circle-x'}"></i> ${pass?'PASS':'REVISE'}</span></div>`;
+  let h=`<div style="margin-bottom:11px"><span class="pill ${pass?'pass':'fail'}"><i class="ti ti-${pass?'circle-check':'circle-x'}"></i> ${pass?'Passed':'Revise'}</span></div>`;
   h+=`<div class="arith"><div class="abox"><h4>Verifier re-derived (from KB)</h4>${loss?`<div class="arow"><span>Loss of future earning</span><span class="num">₹${fmt(loss.amount)}</span></div><div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${esc(loss.formula)}</div>`:`<div class="empty">insufficient facts</div>`}<div class="arow"><span>Medical expenses</span><span class="num">₹${fmt(med?med.amount:0)}</span></div></div>
     <div class="abox"><h4>Petition claimed</h4><div class="arow"><span>Loss of future earning</span><span><span class="num">₹${fmt(cl.loss_of_earning)}</span> <span class="${lm?'match':'mismatch'}">${lm?'✓':'✗'}</span></span></div><div class="arow"><span>Medical expenses</span><span><span class="num">₹${fmt(cl.medical_expenses)}</span> <span class="${mm?'match':'mismatch'}">${mm?'✓':'✗'}</span></span></div><div class="arow"><span>Grand total</span><span class="num">₹${fmt(cl.grand_total)}</span></div></div></div>`;
-  h+=`<div class="checks" style="margin-top:12px">`+(att.must||[]).map(c=>`<div class="check ${c.status}"><span class="m">${esc(c.id)} ${c.status==='PASS'?'✓':(c.status==='FAIL'?'✗':'~')}</span><span class="nt">${esc(c.note)}</span></div>`).join("")+`</div>`;
+  h+=`<div class="checks" style="margin-top:14px">`+(att.must||[]).map(c=>`<div class="check ${c.status}"><span class="m">${esc(c.id)} ${c.status==='PASS'?'✓':(c.status==='FAIL'?'✗':'~')}</span><span class="nt">${esc(c.note)}</span></div>`).join("")+`</div>`;
   if(att.feedback_to_drafter&&!pass)h+=`<div class="feedback"><strong>Feedback to drafter:</strong>\n${esc(att.feedback_to_drafter)}</div>`;
   $("#petVerify").innerHTML=h;
 }
@@ -325,7 +325,6 @@ function fillStats(){
   $("#statstrip").innerHTML=items.map(([ic,v,l])=>`<div class="stat"><div class="v">${esc(v)}</div><div class="l"><i class="ti ${ic}"></i> ${esc(l)}</div></div>`).join("");
 }
 function renderFinal(){if(!TRACE)return;renderDocs(TRACE.ingest);renderRecord(TRACE.record);renderKbVerify(TRACE.kb_verify);const a=(TRACE.draft&&TRACE.draft.attempts)||[];if(a.length)renderAttempt(a[a.length-1]);["ingest","reconcile","verify_kb","draft","verify_petition"].forEach(k=>setStage(k,"done"));fillStats();}
-/* replay */
 async function replay(){
   if(busy||!TRACE)return;busy=true;showPane("run");$("#replayBtn").disabled=true;$("#liveBtn").disabled=true;resetStages();
   $("#docs").innerHTML='<div class="empty">…</div>';$("#facts").innerHTML='<div class="empty">…</div>';$("#contradictions").className="cpanel";$("#contradictions").innerHTML="Watching…";$("#timeline").innerHTML="";$("#kbVerify").innerHTML='<div class="empty">…</div>';$("#petVerify").innerHTML='<div class="empty">…</div>';$("#petitionWrap").innerHTML='<div class="empty">…</div>';
@@ -334,16 +333,15 @@ async function replay(){
   for(let i=0;i<TRACE.ingest.length;i++){const d=TRACE.ingest[i];rev.push(d.source_doc);cl+=(d.extracted||0);
     setStatus(`Ingesting ${i+1}/${TRACE.ingest.length}`,true);renderDocs(TRACE.ingest.slice(0,i+1));
     const part=partialRecord(TRACE.record,rev,cl);renderRecord(part);
-    if(part.contradictions.length)$("#contradictions").classList.add("hit");await sleep(780);}
+    if(part.contradictions.length)$("#contradictions").classList.add("hit");await sleep(760);}
   renderRecord(TRACE.record);setStage("ingest","done");setStage("reconcile","done");
-  setStatus("Verifying KB…",true);setStage("verify_kb","active");await sleep(650);
+  setStatus("Verifying the knowledge base…",true);setStage("verify_kb","active");await sleep(650);
   renderKbVerify(TRACE.kb_verify);setStage("verify_kb",TRACE.kb_verify.committed?"done":"failed");await sleep(450);
   const a=(TRACE.draft&&TRACE.draft.attempts)||[];
   for(let k=0;k<a.length;k++){setStage("draft","active");setStatus(`Drafting (attempt ${k+1})…`,true);await sleep(650);renderAttempt(a[k]);
-    if(a[k].result==="pass"){setStage("draft","done");setStage("verify_petition","done");}else{setStage("verify_petition","failed");setStatus(`Rejected — revising…`,true);await sleep(800);}}
-  setStatus(TRACE.draft&&TRACE.draft.passed?`Done · petition passed`:"Finished",false);fillStats();busy=false;$("#replayBtn").disabled=false;$("#liveBtn").disabled=false;
+    if(a[k].result==="pass"){setStage("draft","done");setStage("verify_petition","done");}else{setStage("verify_petition","failed");setStatus("Rejected — revising…",true);await sleep(800);}}
+  setStatus(TRACE.draft&&TRACE.draft.passed?"Done · petition passed":"Finished",false);fillStats();busy=false;$("#replayBtn").disabled=false;$("#liveBtn").disabled=false;
 }
-/* live */
 let es=null;
 function runLive(){
   if(busy)return;busy=true;showPane("run");$("#replayBtn").disabled=true;$("#liveBtn").disabled=true;resetStages();const dt=[];
@@ -358,23 +356,21 @@ function runLive(){
   es.addEventListener("done",()=>{es.close();busy=false;$("#replayBtn").disabled=false;$("#liveBtn").disabled=false;});
   es.addEventListener("error",e=>{let m="Stream error.";try{if(e.data)m=JSON.parse(e.data).error||m;}catch(_){}setStatus(m,false);busy=false;$("#replayBtn").disabled=false;$("#liveBtn").disabled=false;if(es)es.close();});
 }
-/* evidence + real */
 function loadCorpus(){fetch("/api/corpus").then(r=>r.json()).then(d=>{$("#tab-docs").innerHTML=(d.docs||[]).map(x=>`<details class="item"><summary><i class="ti ${sIcon(x.stream)}"></i> ${esc(x.file.split("/").pop())} <span class="meta">— ${esc(x.source_type)}</span></summary><pre class="src">${esc(x.text)}</pre></details>`).join("");}).catch(()=>{});}
 function loadPrec(){fetch("/api/precedent").then(r=>r.json()).then(d=>{$("#tab-prec").innerHTML=(d.notes||[]).map(n=>`<details class="item"><summary><i class="ti ti-gavel"></i> ${esc(n.name)}</summary><div class="mdnote">${md(n.text)}</div></details>`).join("");}).catch(()=>{});}
 function loadLogs(){fetch("/api/logs").then(r=>r.json()).then(d=>{let h="";["kb_verify","petition_verify"].forEach(k=>{if(d[k])h+=`<details class="item" open><summary><i class="ti ti-clipboard-check"></i> ${esc(d[k].file)}</summary><div class="mdnote">${md(d[k].text)}</div></details>`;});$("#tab-logs").innerHTML=h||'<div class="empty">Run the loop to generate transcripts.</div>';}).catch(()=>{});}
 function loadReal(){fetch("/api/real-stats").then(r=>r.json()).then(s=>{
   if(!s||!s.total_documents){$("#realPanel").innerHTML='<div class="empty">No stats.</div>';return;}
   const st=Object.entries(s.by_stream||{}).map(([k,v])=>`${v} ${k}`).join(" · "),kn=Object.entries(s.by_kind||{}).map(([k,v])=>`${v} ${k}`).join(" · ");
-  $("#realPanel").innerHTML=`<div class="callout"><i class="ti ti-shield-lock"></i><div>The same loop runs on the advocate's real catastrophic-injury case. Scans &amp; report photos are read by <strong>Opus 4.8 vision-OCR</strong>; every real-run artifact is written to a gitignored folder — no patient data is committed or deployed.</div></div>
-   <div class="realgrid"><div class="rstat"><div class="v">${s.total_documents}</div><div class="l">real documents</div></div><div class="rstat"><div class="v" style="font-size:16px">${esc(st)}</div><div class="l">by stream</div></div><div class="rstat"><div class="v" style="font-size:16px">${esc(kn)}</div><div class="l">by type</div></div></div>
-   <p class="empty" style="margin-top:12px">${esc(s.note||"")}</p>`;
+  $("#realPanel").innerHTML=`<div class="callout"><i class="ti ti-shield-lock"></i><div>The same loop runs on the advocate's real catastrophic-injury case. Scans and report photos are read by Opus 4.8 vision-OCR; every real-run artifact is written to a gitignored folder — no patient data is committed or deployed.</div></div>
+   <div class="realgrid"><div class="rstat"><div class="v">${s.total_documents}</div><div class="l">real documents</div></div><div class="rstat"><div class="v" style="font-size:17px">${esc(st)}</div><div class="l">by stream</div></div><div class="rstat"><div class="v" style="font-size:17px">${esc(kn)}</div><div class="l">by type</div></div></div>
+   <p class="empty" style="margin-top:14px">${esc(s.note||"")}</p>`;
 }).catch(()=>{});}
-/* boot */
 $("#replayBtn").addEventListener("click",replay);$("#liveBtn").addEventListener("click",runLive);
 $("#repoBadge").href="https://github.com/harykrish/mact-petition-drafter";
-fetch("/api/health").then(r=>r.json()).then(h=>{$("#modelBadge").textContent="model: "+h.model;$("#keyBadge").textContent=h.api_key_present?"key: set":"key: not set";$("#keyBadge").className="badge "+(h.api_key_present?"ok":"no");if(!h.api_key_present){$("#liveBtn").disabled=true;$("#liveBtn").title="Set ANTHROPIC_API_KEY to run live";}});
+fetch("/api/health").then(r=>r.json()).then(h=>{$("#modelBadge").innerHTML=`<span class="dot ok"></span> ${esc(h.model)}`;$("#keyBadge").innerHTML=`<span class="dot ${h.api_key_present?'ok':'no'}"></span> API key ${h.api_key_present?'set':'not set'}`;if(!h.api_key_present){$("#liveBtn").disabled=true;$("#liveBtn").title="Set ANTHROPIC_API_KEY to run live";}});
 loadCorpus();loadPrec();loadLogs();loadReal();
-fetch("/api/replay").then(r=>r.ok?r.json():null).then(t=>{if(t&&t.record){TRACE=t;renderFinal();setStatus("Loaded — press Replay to watch it build.",false);}else{fetch("/api/state").then(r=>r.json()).then(s=>{if(s.case_record)renderRecord(s.case_record);if(s.petition_md){$("#petitionWrap").innerHTML=`<div class="doc-view">${petitionHtml(s.petition_md)}</div>`;wireCites();}});}});
+fetch("/api/replay").then(r=>r.ok?r.json():null).then(t=>{if(t&&t.record){TRACE=t;renderFinal();setStatus("Loaded a captured run — press Replay to watch it build.",false);}else{fetch("/api/state").then(r=>r.json()).then(s=>{if(s.case_record)renderRecord(s.case_record);if(s.petition_md){$("#petitionWrap").innerHTML=`<div class="doc-view">${petitionHtml(s.petition_md)}</div>`;wireCites();}});}});
 </script>
 </body>
 </html>
