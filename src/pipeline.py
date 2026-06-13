@@ -105,7 +105,7 @@ def _infer_source_type(filename: str, stream: str) -> str:
 
 def real_corpus_files(include_images: bool = True, streams=None, limit=None):
     """List ingestible files under data/<stream>/. Images are included by default
-    (read via Opus vision-OCR; large ones are downscaled, never skipped for size)."""
+    (read via vision OCR; large ones are downscaled, never skipped for size)."""
     from . import llm
     out = []
     for stream in (streams or config.VALID_STREAMS):

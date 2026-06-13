@@ -29,7 +29,7 @@ def main() -> int:
         print("ANTHROPIC_API_KEY is not set. Export it and retry.")
         return 2
 
-    print("Running the loop on the synthetic corpus (model: see config)...\n")
+    print("Running the loop on the synthetic corpus...\n")
     for kind, payload in pipeline.run_full_events(
             use_llm=not args.no_llm_verify, inject_error=args.inject_error, commit_git=args.git):
         if kind == "ingest":

@@ -28,7 +28,8 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"model": config.MODEL, "api_key_present": llm.api_key_present()}
+    # No model name surfaced — the product is Lexcompile, not a model demo.
+    return {"api_key_present": llm.api_key_present()}
 
 
 @app.get("/api/corpus")

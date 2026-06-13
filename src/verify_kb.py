@@ -3,7 +3,7 @@
 
 Two independent graders:
   1. run_deterministic() — checks every invariant in code. Authoritative gate.
-  2. llm_grade() (in llm.py) — a fresh-context Opus pass that re-reads the
+  2. llm_grade() (in llm.py) — a fresh-context model pass that re-reads the
      candidate + the rubric and returns its own verdict.
 
 The commit gate requires the deterministic pass; the LLM verdict is logged

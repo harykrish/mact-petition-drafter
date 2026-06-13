@@ -1,4 +1,4 @@
-"""All Opus 4.8 calls live here.
+"""All model calls live here.
 
 Four operations:
   extract_facts  — messy document  -> structured, sourced facts (JSON schema)
@@ -212,7 +212,7 @@ _VISION_GUIDANCE = (
 
 def _extract_with_blocks(blocks: List[Dict], stream: str, source_doc: str, source_type: str,
                          extract_observations: bool = True) -> List[Dict]:
-    """Extraction from non-text input (PDF/image content blocks) via Opus vision.
+    """Extraction from non-text input (PDF/image content blocks) via model vision.
     Returns documented facts (under `source_type`) plus, optionally, AI visual
     observations recorded as low-confidence, review-flagged image_finding facts."""
     client = _client()
@@ -269,7 +269,7 @@ def extract_facts_from_path(path: str, stream: str, source_doc: str, source_type
 
 
 def _image_block(path: str, max_edge: int = 2200, max_bytes: int = 4_500_000) -> Dict:
-    """Read a scan/photo as an Opus vision block. Large images are downscaled and
+    """Read a scan/photo as a vision block. Large images are downscaled and
     re-encoded so they fit the API's per-image size limit (never skipped)."""
     import io
     try:

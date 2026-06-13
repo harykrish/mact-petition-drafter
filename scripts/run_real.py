@@ -1,14 +1,14 @@
 """Run the loop on the user's REAL documents in /data/ (needs ANTHROPIC_API_KEY).
 
-    .venv/bin/python -m scripts.run_real                 # ALL docs incl. scan images (Opus vision-OCR)
+    .venv/bin/python -m scripts.run_real                 # ALL docs incl. scan images (vision OCR)
     .venv/bin/python -m scripts.run_real --no-images     # skip images (text/pdf/docx only)
     .venv/bin/python -m scripts.run_real --stream financial   # one stream only
     .venv/bin/python -m scripts.run_real --max 20        # cap how many files (cost control)
     .venv/bin/python -m scripts.run_real --list          # show what would be ingested (no API calls)
 
-Images (scans, report photos, FIR images, lab results) are READ VIA OPUS 4.8
-VISION — it OCRs the text and understands the document in one pass. Large images
-are auto-downscaled so none are skipped.
+Images (scans, report photos, FIR images, lab results) are READ VIA VISION OCR
+— the text is read and the document understood in one pass. Large images are
+auto-downscaled so none are skipped.
 
 ALL output (case_record.json, changelog.md, petition, verifier logs) is written
 to data/_run/ — which is gitignored — so real PII is NEVER committed. The public
@@ -58,7 +58,7 @@ def main() -> int:
         print("ANTHROPIC_API_KEY is not set. Put it in .env or export it, then retry.")
         return 2
 
-    print("Running the loop on %d REAL documents (images via Opus vision-OCR). Output → %s (gitignored).\n"
+    print("Running the loop on %d REAL documents (images via vision OCR). Output → %s (gitignored).\n"
           % (len(files), config.REAL_PATHS.case_record.parent))
     for kind, payload in pipeline.run_real_events(include_images=include_images, streams=args.stream,
                                                   limit=args.max, use_llm=not args.no_llm_verify,
