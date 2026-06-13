@@ -7,7 +7,7 @@ and verifies its own work.
 > Ingest documents → reconcile facts into a self-consistent KB → verify the KB
 > against a rubric in a **fresh context** → draft a petition from the KB alone →
 > an **independent verifier re-derives every number** and sends the draft back if
-> it doesn't add up. All on `claude-opus-4-8`.
+> it doesn't add up.
 
 See [`brief.md`](brief.md) for the problem statement, who it's for, and the bar for "done".
 
@@ -51,7 +51,7 @@ arithmetic re-derivation shown beside the drafter's numbers**.
 
 Drop real documents into `data/{police,medical,financial}/` (any mix of
 `.pdf`, `.docx`, `.txt`, `.md`, `.json`, and images). PDFs and scan images are
-read **directly by Opus 4.8 vision** — it OCRs the text and understands the
+read **directly by the model's vision** — it OCRs the text and understands the
 document structure in one pass (better than tesseract for medical scans, forms,
 and handwriting). Large images are auto-downscaled so none are skipped.
 
@@ -110,12 +110,12 @@ the same rubrics — nothing is hard-coded to this case.
 ## Architecture
 
 ```
-synthetic/ or data/   →  src/ingest.py     extract structured, sourced facts (Opus, JSON schema)
+synthetic/ or data/   →  src/ingest.py     extract structured, sourced facts (LLM, JSON schema)
                          src/reconcile.py  classify new/correction/contradiction/duplicate
 knowledge/case_record.json  ← single source of truth (facts[] + contradictions[] + changelog[])
-                         src/verify_kb.py  invariant gate + fresh-context Opus cross-check → commit on pass
-                         src/draft_petition.py  petition from KB facts only (Opus)
-                         src/verify_petition.py independent arithmetic (Python) + fresh-context Opus grading
+                         src/verify_kb.py  invariant gate + fresh-context LLM cross-check → commit on pass
+                         src/draft_petition.py  petition from KB facts only (LLM)
+                         src/verify_petition.py independent arithmetic (Python) + fresh-context LLM grading
 output/petition_draft.md     ← the deliverable      logs/  ← every verifier transcript
 ```
 
@@ -140,4 +140,4 @@ draft is caught deterministically and fed back for revision.
 
 Facts only — never medical advice or clinical recommendations; the output is a
 legal document. The repo is public; real documents live in `/data/` (gitignored)
-and the demo runs entirely on the synthetic set. Model: `claude-opus-4-8`.
+and the demo runs entirely on the synthetic set.

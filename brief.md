@@ -63,7 +63,6 @@ petition. No human judgment required to confirm completion.
   medical advice or clinical recommendations. The output is a legal document.
 - The repo is public at submission. Real case documents live in `/data/`
   (gitignored) and are never committed. The demo runs on the synthetic set.
-- Model: `claude-opus-4-8`.
 
 ## How completion is verified by the model (orchestration)
 - `kb_invariants.md` — graded on every KB update.
