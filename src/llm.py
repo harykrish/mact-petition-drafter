@@ -75,17 +75,17 @@ def _json_from_text(text: str) -> Dict:
 def _reason_then_json(system: str, user: str, effort: str = "high",
                       max_tokens: int = 12000) -> Dict:
     """Adaptive-thinking call that ends in a fenced JSON block we parse.
-    Streams so a long reasoning pass doesn't hit the non-streaming timeout guard."""
+    Non-streaming so the SDK auto-retries the whole request on a connection reset
+    (mid-stream resets are NOT retried — important on flaky networks)."""
     client = _client()
-    with client.messages.stream(
+    message = client.messages.create(
         model=config.MODEL,
         max_tokens=max_tokens,
         thinking={"type": "adaptive"},
         output_config={"effort": effort},
         system=system,
         messages=[{"role": "user", "content": user}],
-    ) as stream:
-        message = stream.get_final_message()
+    )
     return _json_from_text(_text_of(message))
 
 
@@ -364,15 +364,17 @@ def draft_petition(record: Dict, feedback: Optional[str] = None) -> str:
         user += ("\n\n# VERIFIER FEEDBACK on your previous draft — fix every item:\n%s" % feedback)
 
     client = _client()
-    with client.messages.stream(
+    # Non-streaming so the SDK retries the whole request on a connection reset
+    # (mid-stream resets aren't retried). 12k is ample for a petition and stays
+    # under the SDK's long-request guard.
+    message = client.messages.create(
         model=config.MODEL,
-        max_tokens=16000,
+        max_tokens=12000,
         thinking={"type": "adaptive"},
         output_config={"effort": "high"},
         system=system,
         messages=[{"role": "user", "content": user}],
-    ) as stream:
-        message = stream.get_final_message()
+    )
     return _text_of(message)
 
 
