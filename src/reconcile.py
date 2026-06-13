@@ -191,8 +191,10 @@ def reconcile_fact(record: Dict, raw: Dict) -> Dict:
     # (epsilon guards float subtraction, e.g. 0.95 - 0.85 == 0.0999...)
     if f_auth - a_auth >= config.CORRECTION_MARGIN - 1e-9:
         new_fact = _make_fact(record, raw)
-        new_fact["history"].append(_history_entry(
-            existing, "Superseded by higher-authority %s (%s)" % (raw["source_type"], new_fact["id"])))
+        # Carry forward the whole chain so the active fact's history holds every
+        # prior value (keeps "no silent overwrite" true across repeated corrections).
+        new_fact["history"] = list(existing.get("history", [])) + [_history_entry(
+            existing, "Superseded by higher-authority %s (%s)" % (raw["source_type"], new_fact["id"]))]
         existing["superseded"] = True
         record["facts"].append(new_fact)
         store.add_changelog(record, "correction",
@@ -218,33 +220,41 @@ def reconcile_fact(record: Dict, raw: Dict) -> Dict:
                 "kept": existing["id"], "field": field}
 
     # CONTRADICTION — comparable authority. Park it; never silently resolve.
+    existing["needs_human_review"] = True    # the active value is flagged disputed
+
+    # Collapse into an existing unresolved contradiction on this field rather than
+    # spawning a duplicate entry (e.g. several medical docs giving the same
+    # alternate accident date). Decide BEFORE creating a fact so corroborating
+    # values don't leave an orphaned superseded fact.
+    existing_c = next((c for c in record["contradictions"]
+                       if c["field"] == field and c.get("status") == "unresolved"), None)
+    if existing_c is not None:
+        if any(values_equal(field, v["value"], raw["value"]) for v in existing_c["values"]):
+            store.add_changelog(record, "duplicate",
+                                "%s value %r from %s corroborates contradiction %s" % (
+                                    field, raw["value"], raw["source_type"], existing_c["id"]),
+                                contradiction_id=existing_c["id"], field=field)
+            return {"classification": "duplicate", "contradiction_id": existing_c["id"], "field": field}
+        conflict = _make_fact(record, raw)
+        conflict["superseded"] = True
+        conflict["needs_human_review"] = True
+        record["facts"].append(conflict)
+        existing_c["values"].append({"fact_id": conflict["id"], "value": conflict["value"],
+                                     "stream": conflict["stream"], "source_doc": conflict["source_doc"],
+                                     "source_type": conflict["source_type"]})
+        store.add_changelog(record, "contradiction",
+                            "%s gained another conflicting value %r (%s) under %s" % (
+                                field, conflict["value"], conflict["source_type"], existing_c["id"]),
+                            contradiction_id=existing_c["id"], field=field)
+        return {"classification": "contradiction", "contradiction_id": existing_c["id"],
+                "fact_ids": [v["fact_id"] for v in existing_c["values"]],
+                "cross_stream": any(v["stream"] != conflict["stream"] for v in existing_c["values"]),
+                "field": field}
+
     conflict = _make_fact(record, raw)
     conflict["superseded"] = True            # not used downstream as active...
     conflict["needs_human_review"] = True
     record["facts"].append(conflict)
-    existing["needs_human_review"] = True    # ...but the active value is flagged disputed
-
-    # Collapse into an existing unresolved contradiction on this field rather than
-    # spawning a duplicate entry for the same conflict (e.g. several medical docs
-    # all giving the same alternate accident date).
-    for c in record["contradictions"]:
-        if c["field"] == field and c.get("status") == "unresolved":
-            if any(values_equal(field, v["value"], conflict["value"]) for v in c["values"]):
-                store.add_changelog(record, "duplicate",
-                                    "%s value %r from %s corroborates contradiction %s" % (
-                                        field, conflict["value"], conflict["source_type"], c["id"]),
-                                    fact_id=conflict["id"], field=field)
-            else:
-                c["values"].append({"fact_id": conflict["id"], "value": conflict["value"],
-                                    "stream": conflict["stream"], "source_doc": conflict["source_doc"],
-                                    "source_type": conflict["source_type"]})
-                store.add_changelog(record, "contradiction",
-                                    "%s gained another conflicting value %r (%s) under %s" % (
-                                        field, conflict["value"], conflict["source_type"], c["id"]),
-                                    contradiction_id=c["id"], field=field)
-            return {"classification": "contradiction", "contradiction_id": c["id"],
-                    "fact_ids": [v["fact_id"] for v in c["values"]],
-                    "cross_stream": existing["stream"] != conflict["stream"], "field": field}
 
     cid = store.next_contradiction_id(record)
     contradiction = {
