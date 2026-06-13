@@ -174,7 +174,11 @@ def _extract_with_blocks(blocks: List[Dict], stream: str, source_doc: str, sourc
     client = _client()
     content = list(blocks) + [{"type": "text", "text":
         "Document type: %s   Stream: %s   Source: %s\nExtract the structured facts from the "
-        "attached document per the rules." % (source_type, stream, source_doc)}]
+        "attached document per the rules.\n\nIMPORTANT for images: if this is a raw diagnostic "
+        "scan (e.g. a CT/MRI slice) rather than a typed report, extract ONLY the visible "
+        "text/metadata (patient name, dates, study/modality, institution). Do NOT infer, read, "
+        "or describe any clinical or radiological findings from the scan itself — findings must "
+        "come only from a written radiology report." % (source_type, stream, source_doc)}]
     message = client.messages.create(
         model=config.MODEL,
         max_tokens=4000,
