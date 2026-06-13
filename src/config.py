@@ -117,6 +117,35 @@ DEFAULT_AUTHORITY = 0.85
 # (parked for a human — never silently resolved).
 CORRECTION_MARGIN = 0.10
 
+# Stream ownership (the brief's mapping): liability facts come from police,
+# income from financial, disability quantum from medical. A fact for an owned
+# field extracted from a non-owning stream is ignored (and logged) — this stops
+# e.g. a hospital note's vague "a lorry" from conflicting with the FIR's reg no.
+# Fields NOT listed (victim_name, victim_age, accident_date, accident_place,
+# injuries, image_finding, medical_expense_*) may legitimately appear in any
+# stream — accident_date in particular is shared, which is how the cross-stream
+# date contradiction is caught.
+FIELD_STREAMS = {
+    "offending_vehicle": {"police"},
+    "offending_driver": {"police"},
+    "vehicle_owner": {"police"},
+    "insurer": {"police"},
+    "policy_number": {"police"},
+    "negligence": {"police"},
+    "annual_income": {"financial"},
+    "employment_type": {"financial"},
+    "occupation": {"financial"},
+    "functional_disability_pct": {"medical"},
+    "permanent_disability": {"medical"},
+    "hospitalization_days": {"medical"},
+}
+
+# Registration-/policy-like fields compared on their alphanumeric core, ignoring
+# noise words, so "Lorry No. TN-19-K-4567" == "Lorry TN-19-K-4567".
+ID_FIELDS = {"offending_vehicle", "policy_number"}
+ID_NOISE_WORDS = {"no", "lorry", "truck", "vehicle", "bearing", "registration",
+                  "reg", "car", "number", "bus", "auto"}
+
 # Fields treated as numeric / date for value comparison.
 NUMERIC_FIELDS = {"victim_age", "hospitalization_days", "functional_disability_pct", "annual_income"}
 DATE_FIELDS = {"accident_date"}

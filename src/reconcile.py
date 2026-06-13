@@ -86,6 +86,11 @@ def _subseq_match(short_: List[str], long_: List[str]) -> bool:
     return i == len(short_)
 
 
+def _norm_id(v) -> str:
+    toks = [t for t in re.split(r"[^a-z0-9]+", str(v).lower()) if t and t not in config.ID_NOISE_WORDS]
+    return "".join(toks)
+
+
 def values_equal(field: str, v1, v2) -> bool:
     if field in config.NUMERIC_FIELDS:
         n1, n2 = _to_number(v1), _to_number(v2)
@@ -94,6 +99,8 @@ def values_equal(field: str, v1, v2) -> bool:
         return _to_iso_date(v1) == _to_iso_date(v2)
     if field in config.NAME_FIELDS:
         return _names_match(str(v1), str(v2))
+    if field in config.ID_FIELDS:
+        return _norm_id(v1) == _norm_id(v2)
     return str(v1).strip().lower() == str(v2).strip().lower()
 
 
@@ -136,6 +143,15 @@ def _history_entry(fact: Dict, reason: str) -> Dict:
 def reconcile_fact(record: Dict, raw: Dict) -> Dict:
     """Apply one RawFact to the record. Returns the classification result."""
     field = raw["field"]
+
+    # Stream ownership: ignore facts for an owned field from a non-owning stream.
+    allowed = config.FIELD_STREAMS.get(field)
+    if allowed is not None and raw["stream"] not in allowed:
+        store.add_changelog(record, "skipped_off_stream",
+                            "%s from %s ignored — established by the %s stream" % (
+                                field, raw["stream"], "/".join(sorted(allowed))),
+                            field=field)
+        return {"classification": "skipped_off_stream", "field": field, "stream": raw["stream"]}
 
     # Narrative fields: corroborate or append; never a contradiction.
     if field in config.NARRATIVE_FIELDS:
@@ -207,6 +223,28 @@ def reconcile_fact(record: Dict, raw: Dict) -> Dict:
     conflict["needs_human_review"] = True
     record["facts"].append(conflict)
     existing["needs_human_review"] = True    # ...but the active value is flagged disputed
+
+    # Collapse into an existing unresolved contradiction on this field rather than
+    # spawning a duplicate entry for the same conflict (e.g. several medical docs
+    # all giving the same alternate accident date).
+    for c in record["contradictions"]:
+        if c["field"] == field and c.get("status") == "unresolved":
+            if any(values_equal(field, v["value"], conflict["value"]) for v in c["values"]):
+                store.add_changelog(record, "duplicate",
+                                    "%s value %r from %s corroborates contradiction %s" % (
+                                        field, conflict["value"], conflict["source_type"], c["id"]),
+                                    fact_id=conflict["id"], field=field)
+            else:
+                c["values"].append({"fact_id": conflict["id"], "value": conflict["value"],
+                                    "stream": conflict["stream"], "source_doc": conflict["source_doc"],
+                                    "source_type": conflict["source_type"]})
+                store.add_changelog(record, "contradiction",
+                                    "%s gained another conflicting value %r (%s) under %s" % (
+                                        field, conflict["value"], conflict["source_type"], c["id"]),
+                                    contradiction_id=c["id"], field=field)
+            return {"classification": "contradiction", "contradiction_id": c["id"],
+                    "fact_ids": [v["fact_id"] for v in c["values"]],
+                    "cross_stream": existing["stream"] != conflict["stream"], "field": field}
 
     cid = store.next_contradiction_id(record)
     contradiction = {
