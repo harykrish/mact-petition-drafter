@@ -3,7 +3,9 @@
 __pycache__/
 .env
 node_modules/
-.claude/
+.claude/*
+!.claude/workflows/
+!.claude/agents/
 output/
 .venv/
 venv/

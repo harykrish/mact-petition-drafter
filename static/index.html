@@ -110,8 +110,9 @@
   .sdot.police{background:var(--police)} .sdot.medical{background:var(--medical)} .sdot.financial{background:var(--financial)}
   .flag{font-size:9.5px;padding:1px 6px;border-radius:5px;background:var(--amber-bg);color:var(--amber);border:1px solid #ead9b0;margin-left:5px}
   .cpanel{border:1px dashed var(--line);border-radius:var(--r-sm);padding:15px;color:var(--muted);font-size:12.5px;text-align:center}
-  .cpanel.hit{border:1px solid var(--disputed);background:var(--amber-bg);color:var(--ink);text-align:left;animation:pop .45s ease}
+  .cpanel.hit{border:1px solid var(--disputed);background:var(--amber-bg);color:var(--ink);text-align:left;animation:pop .45s ease, contradiction-glow 2s ease-in-out .45s infinite}
   @keyframes pop{0%{transform:scale(.97)}55%{transform:scale(1.02)}100%{transform:scale(1)}}
+  @keyframes contradiction-glow{0%,100%{box-shadow:0 0 0 0 rgba(165,92,36,.0)}50%{box-shadow:0 0 18px 4px rgba(165,92,36,.25)}}
   .cd{margin-top:8px;padding:12px;border-radius:var(--r-sm);background:var(--surface);border:1px solid #ead9b0}
   .cd .cf{font-weight:600;color:var(--disputed);display:flex;align-items:center;gap:7px} .cd .cv{font-size:12.5px;margin-top:5px}
   .timeline{list-style:none;margin:0;padding:0;font-size:12px;max-height:560px;overflow:auto}
@@ -165,6 +166,22 @@
   .realgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:16px}
   .rstat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:17px}
   .rstat .v{font-size:24px;font-weight:600;letter-spacing:-.5px} .rstat .l{font-size:12px;color:var(--muted);margin-top:4px}
+  /* architecture diagram */
+  .archdiag{margin-top:32px;padding:24px 0 0}
+  .archdiag h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:600;margin:0 0 16px}
+  .arch-flow{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding-bottom:8px;position:relative}
+  .arch-node{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;min-width:110px}
+  .arch-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;text-align:center;width:108px;position:relative;transition:.2s}
+  .arch-box .ab-icon{font-size:18px;color:var(--ink-2);margin-bottom:4px}
+  .arch-box .ab-label{font-size:12px;font-weight:600;color:var(--ink);line-height:1.3}
+  .arch-box .ab-sub{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.3}
+  .arch-box.verifier{border-color:var(--pass);border-width:2px}
+  .arch-badge{font-size:9px;font-weight:600;color:var(--pass);background:var(--pass-bg);border:1px solid #cfe2d2;border-radius:6px;padding:1px 7px;white-space:nowrap;margin-top:4px}
+  .arch-arrow{flex:0 0 auto;display:flex;align-items:center;height:48px;color:var(--line);font-size:18px;padding:0 2px}
+  .arch-arrow i{color:var(--muted)}
+  .arch-loop{position:absolute;bottom:-28px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:4px}
+  .arch-loop-line{height:0;border-bottom:2px dashed var(--muted);flex:1;max-width:200px}
+  .arch-loop-label{font-size:9.5px;color:var(--muted);font-weight:500;white-space:nowrap}
   /* responsive: sidebar -> top */
   @media(max-width:900px){
     .app{flex-direction:column}
@@ -214,6 +231,39 @@
           <button class="wftile" id="homeLive"><i class="ti ti-bolt"></i><div><div class="wt">Run live on the case</div><div class="wp">Real analysis, end to end</div></div></button>
           <button class="wftile" data-goto="evidence"><i class="ti ti-folder"></i><div><div class="wt">Browse the documents</div><div class="wp">Sources, precedents, checks</div></div></button>
           <button class="wftile" data-goto="petition"><i class="ti ti-file-text"></i><div><div class="wt">Open the petition</div><div class="wp">Drafted &amp; verified</div></div></button>
+        </div>
+        <div class="archdiag">
+          <h2>How it works — 5-stage pipeline</h2>
+          <div class="arch-flow">
+            <div class="arch-node">
+              <div class="arch-box"><div class="ab-icon"><i class="ti ti-file-import"></i></div><div class="ab-label">Ingest</div><div class="ab-sub">Structured output extraction</div></div>
+            </div>
+            <div class="arch-arrow"><i class="ti ti-chevron-right"></i></div>
+            <div class="arch-node">
+              <div class="arch-box"><div class="ab-icon"><i class="ti ti-git-merge"></i></div><div class="ab-label">Reconcile</div><div class="ab-sub">Cross-stream conflict detection</div></div>
+            </div>
+            <div class="arch-arrow"><i class="ti ti-chevron-right"></i></div>
+            <div class="arch-node">
+              <div class="arch-box verifier"><div class="ab-icon"><i class="ti ti-shield-check"></i></div><div class="ab-label">Verify KB</div><div class="ab-sub">10 invariants checked</div></div>
+              <div class="arch-badge">Independent agent</div>
+            </div>
+            <div class="arch-arrow"><i class="ti ti-chevron-right"></i></div>
+            <div class="arch-node">
+              <div class="arch-box"><div class="ab-icon"><i class="ti ti-writing"></i></div><div class="ab-label">Draft</div><div class="ab-sub">Opus extended thinking</div></div>
+            </div>
+            <div class="arch-arrow"><i class="ti ti-chevron-right"></i></div>
+            <div class="arch-node" style="position:relative">
+              <div class="arch-box verifier"><div class="ab-icon"><i class="ti ti-checkup-list"></i></div><div class="ab-label">Verify Petition</div><div class="ab-sub">Arithmetic re-derived</div></div>
+              <div class="arch-badge">Independent agent</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;padding-right:10px;margin-top:6px;position:relative">
+            <div style="display:flex;align-items:center;gap:4px;margin-right:54px">
+              <i class="ti ti-arrow-back-up" style="font-size:14px;color:var(--muted)"></i>
+              <span class="arch-loop-label">Revision loop on failure</span>
+              <span class="arch-loop-line"></span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -350,7 +400,8 @@ function fillStats(){
   const rec=TRACE?TRACE.record:null, nf=rec?activeFacts(rec).length:"—", nc=rec?rec.contradictions.length:"—";
   let loss=null;try{loss=TRACE.draft.attempts.slice(-1)[0].arithmetic.recomputed.loss_of_future_earning.amount;}catch(_){}
   const ls=loss?("₹"+(loss>=1e7?(loss/1e7).toFixed(2)+" Cr":fmt(loss))):"—";
-  const items=[["ti-clock","weeks → minutes","time to draft"],["ti-database",nf+" facts","reconciled · all sourced"],["ti-alert-triangle",nc+" contradiction"+(nc==1?"":"s"),"caught autonomously"],["ti-calculator",ls,"loss verified"]];
+  const nIngest=TRACE?TRACE.ingest.length:0;const nAttempts=TRACE&&TRACE.draft?TRACE.draft.attempts.length:0;const opusCalls=nIngest+1+nAttempts+nAttempts;
+  const items=[["ti-clock","weeks \u2192 minutes","time to draft"],["ti-database",nf+" facts","reconciled \u00b7 all sourced"],["ti-alert-triangle",nc+" contradiction"+(nc==1?"":"s"),"caught autonomously"],["ti-calculator",ls,"loss verified"],["ti-cpu",opusCalls+"+ calls","Opus orchestrated"],["ti-shield-check","2 independent","fresh-context verifiers"]];
   $("#statstrip").innerHTML=items.map(([ic,v,l])=>`<div class="stat"><div class="v">${esc(v)}</div><div class="l"><i class="ti ${ic}"></i> ${esc(l)}</div></div>`).join("");
 }
 function renderFinal(){if(!TRACE)return;renderDocs(TRACE.ingest);renderRecord(TRACE.record);renderKbVerify(TRACE.kb_verify);const a=(TRACE.draft&&TRACE.draft.attempts)||[];if(a.length)renderAttempt(a[a.length-1]);["ingest","reconcile","verify_kb","draft","verify_petition"].forEach(k=>setStage(k,"done"));fillStats();}
@@ -360,15 +411,16 @@ async function replay(){
   setStage("ingest","active");setStage("reconcile","active");
   const rev=[];let cl=0;
   for(let i=0;i<TRACE.ingest.length;i++){const d=TRACE.ingest[i];rev.push(d.source_doc);cl+=(d.extracted||0);
-    setStatus(`Ingesting ${i+1}/${TRACE.ingest.length}`,true);renderDocs(TRACE.ingest.slice(0,i+1));
+    const stype=d.source_type||d.source_doc.split("/").pop().replace(/\.\w+$/,"");
+    setStatus(`Extracting facts via structured output from ${stype} (${i+1}/${TRACE.ingest.length})`,true);renderDocs(TRACE.ingest.slice(0,i+1));
     const part=partialRecord(TRACE.record,rev,cl);renderRecord(part);
     if(part.contradictions.length)$("#contradictions").classList.add("hit");await sleep(760);}
   renderRecord(TRACE.record);setStage("ingest","done");setStage("reconcile","done");
-  setStatus("Verifying the knowledge base…",true);setStage("verify_kb","active");await sleep(650);
+  setStatus("Fresh-context KB verification against 10 invariants\u2026",true);setStage("verify_kb","active");await sleep(650);
   renderKbVerify(TRACE.kb_verify);setStage("verify_kb",TRACE.kb_verify.committed?"done":"failed");await sleep(450);
   const a=(TRACE.draft&&TRACE.draft.attempts)||[];
-  for(let k=0;k<a.length;k++){setStage("draft","active");setStatus(`Drafting (attempt ${k+1})…`,true);await sleep(650);renderAttempt(a[k]);
-    if(a[k].result==="pass"){setStage("draft","done");setStage("verify_petition","done");}else{setStage("verify_petition","failed");setStatus("Rejected — revising…",true);await sleep(800);}}
+  for(let k=0;k<a.length;k++){setStage("draft","active");setStatus(k===0?"Opus drafting petition from KB facts only (extended thinking)\u2026":`Revising petition (attempt ${k+1}) with verifier feedback\u2026`,true);await sleep(650);renderAttempt(a[k]);
+    if(a[k].result==="pass"){setStage("draft","done");setStage("verify_petition","done");}else{setStage("verify_petition","failed");setStatus("Verifier rejected \u2014 feeding arithmetic failures back to drafter\u2026",true);await sleep(800);}}
   setStatus(TRACE.draft&&TRACE.draft.passed?"Done · petition passed":"Finished",false);fillStats();busy=false;$("#replayBtn").disabled=false;$("#liveBtn").disabled=false;
 }
 let es=null;
@@ -377,11 +429,11 @@ function runLive(){
   ["#docs","#facts","#kbVerify","#petVerify","#petitionWrap"].forEach(s=>$(s).innerHTML='<div class="empty">…</div>');$("#contradictions").className="cpanel";$("#contradictions").innerHTML="Watching…";
   setStatus("Starting live analysis…",true);
   es=new EventSource(`/api/run-stream?inject_error=${$("#injectBox").checked?1:0}&use_llm=1`);
-  es.addEventListener("start",()=>{setStage("ingest","active");setStatus("Ingesting…",true);});
-  es.addEventListener("ingest",e=>{const p=JSON.parse(e.data);dt.push(p.doc);renderDocs(dt);setStage("ingest","active");setStage("reconcile","active");renderRecord(p.record);setStatus(`Ingested ${p.index+1}/${p.total}`,true);});
-  es.addEventListener("kb_verify",e=>{const p=JSON.parse(e.data);setStage("ingest","done");setStage("reconcile","done");renderRecord(p.record);renderKbVerify(p.verdict.deterministic||p.verdict);setStage("verify_kb",p.committed?"done":"failed");setStatus(p.committed?"KB committed · drafting…":"KB failed",p.committed);if(p.committed)setStage("draft","active");});
-  es.addEventListener("draft_attempt",e=>{const a=JSON.parse(e.data);renderAttempt(a);if(a.result==="pass"){setStage("draft","done");setStage("verify_petition","done");}else{setStage("verify_petition","failed");setStatus(`Rejected attempt ${a.attempt} — revising…`,true);}});
-  es.addEventListener("draft_done",e=>{const p=JSON.parse(e.data);setStage("draft",p.passed?"done":"failed");setStage("verify_petition",p.passed?"done":"failed");setStatus(p.passed?`Petition passed (after ${p.revisions} revision(s))`:"Still failing",false);});
+  es.addEventListener("start",()=>{setStage("ingest","active");setStatus("Opus extracting facts via structured output\u2026",true);});
+  es.addEventListener("ingest",e=>{const p=JSON.parse(e.data);dt.push(p.doc);renderDocs(dt);setStage("ingest","active");setStage("reconcile","active");renderRecord(p.record);const stype=p.doc.source_type||"document";setStatus(`Extracting facts via structured output from ${stype} (${p.index+1}/${p.total})`,true);});
+  es.addEventListener("kb_verify",e=>{const p=JSON.parse(e.data);setStage("ingest","done");setStage("reconcile","done");renderRecord(p.record);renderKbVerify(p.verdict.deterministic||p.verdict);setStage("verify_kb",p.committed?"done":"failed");setStatus(p.committed?"Fresh-context KB verified \u00b7 Opus drafting petition (extended thinking)\u2026":"KB verification failed \u2014 invariant violations detected",p.committed);if(p.committed)setStage("draft","active");});
+  es.addEventListener("draft_attempt",e=>{const a=JSON.parse(e.data);renderAttempt(a);if(a.result==="pass"){setStage("draft","done");setStage("verify_petition","done");}else{setStage("verify_petition","failed");setStatus(`Verifier rejected attempt ${a.attempt} \u2014 feeding failures back to drafter\u2026`,true);}});
+  es.addEventListener("draft_done",e=>{const p=JSON.parse(e.data);setStage("draft",p.passed?"done":"failed");setStage("verify_petition",p.passed?"done":"failed");setStatus(p.passed?`Petition passed \u2014 ${p.revisions} revision(s), all MUSTs verified`:"Still failing",false);});
   es.addEventListener("done",()=>{es.close();busy=false;$("#replayBtn").disabled=false;$("#liveBtn").disabled=false;});
   es.addEventListener("error",e=>{let m="Stream error.";try{if(e.data)m=JSON.parse(e.data).error||m;}catch(_){}setStatus(m,false);busy=false;$("#replayBtn").disabled=false;$("#liveBtn").disabled=false;if(es)es.close();});
 }
