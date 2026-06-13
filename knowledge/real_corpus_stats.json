@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-06-13T20:09:55Z",
+  "total_documents": 161,
+  "by_stream": {
+    "medical": 158,
+    "police": 3
+  },
+  "by_kind": {
+    "image": 137,
+    "pdf": 10,
+    "docx": 6,
+    "text": 8
+  },
+  "note": "Counts only from the advocate's real /data/ corpus. No filenames, values, or PII. Real-run artifacts stay in gitignored data/_run/."
+}

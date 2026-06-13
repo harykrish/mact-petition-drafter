@@ -57,6 +57,43 @@ def state():
     return out
 
 
+@app.get("/api/replay")
+def replay():
+    """A pre-captured full run, for instant client-side animation (no API calls)."""
+    p = config.SYNTHETIC_DIR / "replay_trace.json"
+    if p.exists():
+        return json.loads(p.read_text(encoding="utf-8"))
+    return JSONResponse(status_code=404, content={"error": "no replay trace captured yet"})
+
+
+@app.get("/api/precedent")
+def precedent():
+    notes = []
+    for p in sorted(config.PRECEDENT_DIR.glob("*.md")):
+        notes.append({"name": p.stem, "file": p.name, "text": p.read_text(encoding="utf-8")})
+    return {"notes": notes}
+
+
+@app.get("/api/logs")
+def logs():
+    """Latest fresh-context verifier transcripts (synthetic; no PII)."""
+    files = sorted(config.LOGS_DIR.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
+
+    def latest(prefix):
+        for f in files:
+            if f.name.startswith(prefix):
+                return {"file": f.name, "text": f.read_text(encoding="utf-8")}
+        return None
+
+    return {"kb_verify": latest("kb_verify"), "petition_verify": latest("petition_verify")}
+
+
+@app.get("/api/real-stats")
+def real_stats():
+    p = config.KNOWLEDGE_DIR / "real_corpus_stats.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+
+
 def _sse(use_llm: bool, inject_error: bool):
     def gen():
         try:

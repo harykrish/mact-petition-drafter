@@ -3,95 +3,101 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MACT Petition Drafter — self-maintaining case knowledge base</title>
+<title>Lexcompile — autonomous MACT petition drafter</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>⚖️</text></svg>" />
 <style>
   :root{
-    --ink:#10242b; --ink-2:#34505a; --muted:#6b8089; --line:#dde6e8;
-    --bg:#f4f6f6; --panel:#ffffff; --panel-2:#f0f4f4;
+    --ink:#0e2228; --ink-2:#33505a; --muted:#6c828b; --line:#dde7e9; --line-2:#eef3f3;
+    --bg:#eef2f1; --panel:#fff; --panel-2:#f3f7f6;
     --police:#2563a8; --medical:#138a72; --financial:#9a5b1f;
-    --accent:#0d6e63; --accent-d:#0a564e;
+    --accent:#0d6e63; --accent-d:#0a564e; --accent-l:#e3f4ef;
     --pass:#13845b; --pass-bg:#e3f4ec; --fail:#b32636; --fail-bg:#fbe6e8;
     --warn:#9a6700; --warn-bg:#fcf2da; --disputed:#b3541e;
-    --radius:10px; --shadow:0 1px 2px rgba(16,36,43,.06),0 4px 16px rgba(16,36,43,.05);
+    --r:11px; --shadow:0 1px 2px rgba(16,36,43,.06),0 6px 22px rgba(16,36,43,.06);
   }
   *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
   body{margin:0;background:var(--bg);color:var(--ink);
-    font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.5}
-  header{background:linear-gradient(180deg,#0e2a30,#0c2228);color:#eaf3f2;padding:22px 26px}
-  header h1{margin:0;font-size:21px;letter-spacing:.2px}
-  header p{margin:6px 0 0;color:#9fc4be;font-size:13.5px;max-width:880px}
-  .badges{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
-  .badge{font-size:11.5px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.1);
-    color:#cfe6e2;border:1px solid rgba(255,255,255,.14)}
-  .badge.ok{background:rgba(19,132,91,.25);color:#bff0d6;border-color:rgba(19,132,91,.5)}
-  .badge.no{background:rgba(179,38,54,.25);color:#f6c9cf;border-color:rgba(179,38,54,.5)}
-  main{max-width:1280px;margin:0 auto;padding:22px}
-  .controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--panel);
-    border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
-  button.run{background:var(--accent);color:#fff;border:0;padding:11px 22px;border-radius:8px;
-    font-size:14.5px;font-weight:600;cursor:pointer}
-  button.run:hover{background:var(--accent-d)} button.run:disabled{opacity:.5;cursor:not-allowed}
+    font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.55}
+  a{color:var(--accent-d)}
+  /* hero */
+  header{background:radial-gradient(1200px 400px at 80% -50%,#15414a,#0c2127);color:#eaf3f2;padding:30px 26px 26px}
+  .wrap{max-width:1300px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:.3px;color:#bfe6df}
+  header h1{margin:14px 0 0;font-size:30px;line-height:1.15;letter-spacing:-.3px;max-width:880px}
+  header h1 .hl{color:#7fe3cb}
+  header p.sub{margin:12px 0 0;color:#a9cdc7;font-size:15px;max-width:820px}
+  .statstrip{display:flex;gap:14px;flex-wrap:wrap;margin-top:22px}
+  .stat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:10px;
+    padding:10px 15px;min-width:120px}
+  .stat .v{font-size:20px;font-weight:700;color:#fff}
+  .stat .l{font-size:11.5px;color:#9fc4be;margin-top:2px}
+  .badges{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .badge{font-size:11.5px;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.1);color:#cfe6e2;border:1px solid rgba(255,255,255,.14)}
+  .badge.ok{background:rgba(19,132,91,.28);color:#bff0d6;border-color:rgba(19,132,91,.5)}
+  .badge.no{background:rgba(179,38,54,.26);color:#f6c9cf;border-color:rgba(179,38,54,.5)}
+  main{max-width:1300px;margin:0 auto;padding:22px}
+  /* controls */
+  .controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);
+    border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);position:sticky;top:0;z-index:20}
+  button.btn{border:0;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;padding:11px 20px}
+  button.primary{background:var(--accent);color:#fff} button.primary:hover{background:var(--accent-d)}
+  button.ghost{background:var(--accent-l);color:var(--accent-d);border:1px solid #bfe3d9}
+  button.ghost:hover{background:#d6efe8}
+  button:disabled{opacity:.5;cursor:not-allowed}
   .toggle{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-2)}
   .hint{font-size:12.5px;color:var(--muted)}
-  /* pipeline stage strip */
+  .status{margin-left:auto;font-size:13px;color:var(--ink-2);min-height:18px}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  /* stages */
   .stages{display:flex;gap:10px;margin:18px 0;flex-wrap:wrap}
-  .stage{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);
-    border-radius:var(--radius);padding:11px 13px;position:relative;opacity:.55;transition:.25s}
-  .stage .n{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .stage{flex:1;min-width:140px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;position:relative;opacity:.5;transition:.3s}
+  .stage .n{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
   .stage .t{font-size:14px;font-weight:600;margin-top:2px}
   .stage.active{opacity:1;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-  .stage.done{opacity:1;border-color:var(--pass)}
-  .stage.done::after{content:"✓";position:absolute;top:9px;right:11px;color:var(--pass);font-weight:700}
-  .stage.failed{opacity:1;border-color:var(--fail)}
-  .stage.failed::after{content:"!";position:absolute;top:9px;right:12px;color:var(--fail);font-weight:800}
+  .stage.done{opacity:1;border-color:var(--pass)} .stage.done::after{content:"✓";position:absolute;top:9px;right:11px;color:var(--pass);font-weight:700}
+  .stage.failed{opacity:1;border-color:var(--fail)} .stage.failed::after{content:"!";position:absolute;top:9px;right:12px;color:var(--fail);font-weight:800}
+  /* layout */
   .grid{display:grid;grid-template-columns:1.05fr 1.25fr .9fr;gap:16px}
   @media(max-width:1040px){.grid{grid-template-columns:1fr}}
-  .col h2{font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);
-    margin:0 0 10px;font-weight:700}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-    box-shadow:var(--shadow);padding:14px;margin-bottom:14px}
-  .doc{border-left:4px solid var(--line);padding:9px 12px;margin-bottom:10px;background:var(--panel-2);
-    border-radius:6px}
-  .doc.police{border-left-color:var(--police)} .doc.medical{border-left-color:var(--medical)}
-  .doc.financial{border-left-color:var(--financial)}
-  .doc .dt{font-weight:600;font-size:13.5px} .doc .ds{font-size:12px;color:var(--muted)}
+  h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:24px 0 10px;font-weight:700}
+  .col h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:0 0 9px;font-weight:700}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;margin-bottom:14px}
+  .doc{border-left:4px solid var(--line);padding:9px 12px;margin-bottom:9px;background:var(--panel-2);border-radius:6px;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .doc.police{border-left-color:var(--police)} .doc.medical{border-left-color:var(--medical)} .doc.financial{border-left-color:var(--financial)}
+  .doc .dt{font-weight:600;font-size:13.5px} .doc .ds{font-size:11.5px;color:var(--muted)}
   .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
-  .chip{font-size:11px;padding:2px 7px;border-radius:5px;background:#eef2f2;color:var(--ink-2);
-    border:1px solid var(--line)}
+  .chip{font-size:10.5px;padding:2px 7px;border-radius:5px;background:#eef2f2;color:var(--ink-2);border:1px solid var(--line)}
   .chip.new{background:#e8f3ef;color:#0c6b52;border-color:#bfe3d6}
   .chip.correction{background:#e7eefb;color:#274b86;border-color:#c4d6f4}
   .chip.contradiction{background:var(--warn-bg);color:var(--warn);border-color:#ecd9a6;font-weight:600}
-  .chip.duplicate{background:#f0f0f0;color:#7a7a7a}
-  .chip.correction_skipped{background:#f0f0f0;color:#7a7a7a}
+  .chip.duplicate,.chip.correction_skipped,.chip.skipped_off_stream{background:#f0f0f0;color:#7a7a7a}
   table{width:100%;border-collapse:collapse;font-size:12.5px}
   th,td{text-align:left;padding:6px 7px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+  th{color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px}
   td.fid{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--accent-d);font-size:11.5px;white-space:nowrap}
+  tr.factrow{transition:background .25s} tr.flash{background:#fff6dc}
   .sdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
   .sdot.police{background:var(--police)} .sdot.medical{background:var(--medical)} .sdot.financial{background:var(--financial)}
-  .flag{font-size:10px;padding:1px 5px;border-radius:4px;background:var(--warn-bg);color:var(--warn);
-    border:1px solid #ecd9a6;margin-left:4px}
-  .contradiction-panel{border:1px dashed var(--line);border-radius:8px;padding:12px;background:var(--panel-2);
-    color:var(--muted);font-size:12.5px;text-align:center}
-  .contradiction-panel.hit{border:1px solid var(--disputed);background:var(--warn-bg);color:var(--ink);text-align:left}
+  .flag{font-size:9.5px;padding:1px 5px;border-radius:4px;background:var(--warn-bg);color:var(--warn);border:1px solid #ecd9a6;margin-left:4px}
+  .cpanel{border:1px dashed var(--line);border-radius:8px;padding:12px;background:var(--panel-2);color:var(--muted);font-size:12.5px;text-align:center}
+  .cpanel.hit{border:1px solid var(--disputed);background:var(--warn-bg);color:var(--ink);text-align:left;animation:pop .4s ease}
+  @keyframes pop{0%{transform:scale(.97)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
   .cd{margin-top:8px;padding:9px;border-radius:6px;background:#fff;border:1px solid #ecd9a6}
-  .cd .cf{font-weight:700;color:var(--disputed)}
-  .cd .cv{font-size:12px;margin-top:4px}
+  .cd .cf{font-weight:700;color:var(--disputed)} .cd .cv{font-size:12px;margin-top:4px}
   .timeline{list-style:none;margin:0;padding:0;font-size:12px;max-height:520px;overflow:auto}
-  .timeline li{padding:7px 0 7px 16px;border-left:2px solid var(--line);position:relative}
-  .timeline li::before{content:"";position:absolute;left:-5px;top:11px;width:8px;height:8px;border-radius:50%;
-    background:var(--line)}
-  .timeline li.contradiction::before{background:var(--disputed)}
-  .timeline li.correction::before{background:var(--police)}
-  .timeline li.ingest_new::before{background:var(--pass)}
-  .timeline .act{font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.4px;color:var(--muted)}
-  .timeline li.contradiction .act{color:var(--disputed)}
-  .timeline .sm{color:var(--ink-2)}
-  /* verdict */
-  .verdict{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-  .pill{font-size:13px;font-weight:700;padding:4px 12px;border-radius:999px}
+  .timeline li{padding:6px 0 6px 16px;border-left:2px solid var(--line);position:relative;animation:fade .3s ease}
+  .timeline li::before{content:"";position:absolute;left:-5px;top:10px;width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .timeline li.contradiction::before{background:var(--disputed)} .timeline li.correction::before{background:var(--police)}
+  .timeline li.ingest_new::before{background:var(--pass)} .timeline li.skipped_off_stream::before{background:#aab}
+  .timeline .act{font-weight:700;text-transform:uppercase;font-size:9.5px;letter-spacing:.4px;color:var(--muted)}
+  .timeline li.contradiction .act{color:var(--disputed)} .timeline .sm{color:var(--ink-2)}
+  /* verdicts */
+  .verdict{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .pill{font-size:13px;font-weight:700;padding:4px 13px;border-radius:999px}
   .pill.pass{background:var(--pass-bg);color:var(--pass)} .pill.fail{background:var(--fail-bg);color:var(--fail)}
-  .pill.warn{background:var(--warn-bg);color:var(--warn)}
   .checks{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:12px}
   @media(max-width:700px){.checks{grid-template-columns:1fr}}
   .check{display:flex;gap:7px;align-items:baseline}
@@ -101,51 +107,62 @@
   .arith{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:700px){.arith{grid-template-columns:1fr}}
   .arith .box{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:11px}
-  .arith .box h4{margin:0 0 7px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  .arith .box h4{margin:0 0 7px;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
   .num{font-family:ui-monospace,monospace}
   .match{color:var(--pass);font-weight:700} .mismatch{color:var(--fail);font-weight:700}
-  /* petition document */
-  .doc-view{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:30px 38px;
-    box-shadow:var(--shadow);font-family:Georgia,"Times New Roman",serif;font-size:14.5px;color:#1c1c1c;
-    max-height:680px;overflow:auto}
+  /* petition doc */
+  .doc-view{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:30px 38px;box-shadow:var(--shadow);
+    font-family:Georgia,"Times New Roman",serif;font-size:14.5px;color:#1c1c1c;max-height:720px;overflow:auto}
   .doc-view h1{font-size:20px;text-align:center} .doc-view h2{font-size:16px;border-bottom:1px solid #eee;padding-bottom:4px}
   .doc-view h3{font-size:14.5px} .doc-view table{font-family:system-ui,sans-serif;font-size:12.5px;margin:10px 0}
   .doc-view th,.doc-view td{border:1px solid #e3e3e3;padding:6px 9px}
   .doc-view code{background:#eef3f2;padding:1px 5px;border-radius:4px;font-size:12px;color:var(--accent-d)}
-  .feedback{background:var(--fail-bg);border:1px solid #f1c4cb;border-radius:8px;padding:11px;font-size:12.5px;
-    color:#7a1f2b;white-space:pre-wrap;margin-top:8px}
-  .attempt-tag{font-size:11px;color:var(--muted);margin-bottom:6px}
-  .injected{background:var(--warn-bg);border:1px solid #ecd9a6;color:var(--warn);font-size:12px;
-    padding:8px 11px;border-radius:8px;margin-bottom:10px}
+  .fcite{background:#e7eefb;color:#274b86;border:1px solid #c4d6f4;border-radius:4px;padding:0 4px;font-family:ui-monospace,monospace;
+    font-size:11.5px;cursor:pointer} .fcite:hover{background:#d4e2fb}
+  .feedback{background:var(--fail-bg);border:1px solid #f1c4cb;border-radius:8px;padding:11px;font-size:12.5px;color:#7a1f2b;white-space:pre-wrap;margin-top:8px}
+  .attempt-tag{font-size:11.5px;color:var(--muted);margin-bottom:6px}
   .empty{color:var(--muted);font-size:12.5px;font-style:italic}
-  .spin{display:inline-block;width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--accent);
-    border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:6px}
-  @keyframes s{to{transform:rotate(360deg)}}
-  footer{max-width:1280px;margin:10px auto 40px;padding:0 22px;color:var(--muted);font-size:12px}
-  .src-toggle{font-size:11.5px;color:var(--accent-d);cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block}
-  pre.src{display:none;white-space:pre-wrap;background:#0e2228;color:#cfe6e2;padding:10px;border-radius:6px;
-    font-size:11px;margin-top:6px;max-height:220px;overflow:auto}
+  /* explore tabs */
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .tab{font-size:13px;padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;color:var(--ink-2)}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .tabpane{display:none} .tabpane.active{display:block}
+  details.docitem{border:1px solid var(--line);border-radius:8px;padding:8px 11px;margin-bottom:8px;background:var(--panel-2)}
+  details.docitem summary{cursor:pointer;font-size:13px;font-weight:600}
+  details.docitem .meta{font-size:11.5px;color:var(--muted)}
+  pre.src{white-space:pre-wrap;background:#0e2228;color:#cfe6e2;padding:11px;border-radius:6px;font-size:11.5px;margin-top:8px;max-height:340px;overflow:auto}
+  .md-note{font-size:13px}
+  .md-note table{margin:8px 0}
+  /* real-data */
+  .realgrid{display:flex;gap:12px;flex-wrap:wrap}
+  .realstat{background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:11px 15px;min-width:110px}
+  .realstat .v{font-size:22px;font-weight:700;color:var(--accent-d)} .realstat .l{font-size:11.5px;color:var(--muted)}
+  footer{max-width:1300px;margin:18px auto 50px;padding:0 22px;color:var(--muted);font-size:12.5px}
+  .callout{background:var(--accent-l);border:1px solid #bfe3d9;border-radius:10px;padding:12px 15px;font-size:13.5px;color:#0a463f;margin:10px 0}
 </style>
 </head>
 <body>
 <header>
-  <h1>MACT Petition Drafter</h1>
-  <p>A self-maintaining case knowledge base for Indian Motor Accident Claims Tribunal compensation petitions.
-     Ingest documents → reconcile facts → verify the KB in a fresh context → draft a precedent-grounded petition →
-     an independent verifier re-derives every number. All on <strong>claude-opus-4-8</strong>.</p>
-  <div class="badges">
-    <span class="badge" id="modelBadge">model …</span>
-    <span class="badge" id="keyBadge">key …</span>
-    <span class="badge">synthetic corpus · 3 streams · 9 documents</span>
+  <div class="wrap">
+    <div class="brand">⚖️ Lexcompile</div>
+    <h1>A motor-accident compensation petition takes a paralegal <span class="hl">weeks</span>.<br>This builds it autonomously — and <span class="hl">verifies its own work</span>.</h1>
+    <p class="sub">Ingest police, medical &amp; financial documents → reconcile them into one self-consistent knowledge base → verify it in a fresh context → draft a precedent-grounded MACT petition from facts only → an independent verifier re-derives every rupee. Powered by <strong>claude-opus-4-8</strong>.</p>
+    <div class="statstrip" id="statstrip"></div>
+    <div class="badges">
+      <span class="badge" id="modelBadge">model …</span>
+      <span class="badge" id="keyBadge">key …</span>
+      <span class="badge">3 streams · 9 synthetic documents</span>
+      <a class="badge" id="repoBadge" href="#" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
   </div>
 </header>
 
 <main>
   <div class="controls">
-    <button class="run" id="runBtn">▶ Run the loop</button>
-    <label class="toggle"><input type="checkbox" id="injectBox" />
-      Inject an arithmetic error <span class="hint">(demo: make the verifier catch &amp; fix it)</span></label>
-    <span class="hint" id="status"></span>
+    <button class="btn primary" id="replayBtn">▶ Replay (instant)</button>
+    <button class="btn ghost" id="liveBtn">Run live on Opus</button>
+    <label class="toggle"><input type="checkbox" id="injectBox" /> Inject an arithmetic error <span class="hint">(watch the verifier catch it)</span></label>
+    <span class="status" id="status"></span>
   </div>
 
   <div class="stages" id="stages">
@@ -158,243 +175,267 @@
 
   <div class="grid">
     <div class="col">
-      <h2>Documents ingested</h2>
-      <div id="docs" class="panel"><div class="empty">Run the loop to ingest the three document streams.</div></div>
+      <h3>Documents ingested</h3>
+      <div id="docs" class="panel"><div class="empty">Press Replay to watch the three streams ingest.</div></div>
     </div>
     <div class="col">
-      <h2>Knowledge base · active facts</h2>
+      <h3>Knowledge base · active facts</h3>
       <div class="panel"><div id="facts"><div class="empty">No facts yet.</div></div></div>
-      <h2>Contradictions</h2>
-      <div class="panel"><div id="contradictions" class="contradiction-panel">
-        None yet. The loop parks cross-stream conflicts here instead of guessing.</div></div>
+      <h3>Contradictions <span class="hint">— caught, never silently resolved</span></h3>
+      <div class="panel"><div id="contradictions" class="cpanel">None yet. Cross-stream conflicts park here for a human.</div></div>
     </div>
     <div class="col">
-      <h2>Changelog · append-only</h2>
+      <h3>Changelog · append-only</h3>
       <div class="panel"><ul id="timeline" class="timeline"><li class="empty">Mutations appear here.</li></ul></div>
     </div>
   </div>
 
-  <h2 style="margin-top:6px">KB verification <span class="hint">— independent grader, fresh context</span></h2>
+  <h2 class="sec">KB verification <span class="hint">— independent grader, fresh context, commit only on pass</span></h2>
   <div class="panel" id="kbVerify"><div class="empty">The verifier grades every invariant before the KB is committed.</div></div>
 
-  <h2>Petition draft <span class="hint">— generated from KB facts only</span></h2>
-  <div class="panel" id="petitionWrap"><div class="empty">The petition is drafted once the KB passes verification.</div></div>
+  <h2 class="sec">Petition draft <span class="hint">— from KB facts only; click a [F##] to trace it</span></h2>
+  <div class="panel" id="petitionWrap"><div class="empty">Drafted once the KB passes verification.</div></div>
 
-  <h2>Petition verification <span class="hint">— arithmetic re-derived from scratch</span></h2>
-  <div class="panel" id="petVerify"><div class="empty">The independent verifier re-computes every figure from the KB and checks the precedent-based math.</div></div>
+  <h2 class="sec">Petition verification <span class="hint">— arithmetic re-derived from scratch</span></h2>
+  <div class="panel" id="petVerify"><div class="empty">The independent verifier re-computes every figure from the KB.</div></div>
+
+  <h2 class="sec">Explore</h2>
+  <div class="panel">
+    <div class="tabs">
+      <div class="tab active" data-tab="docs">Source documents</div>
+      <div class="tab" data-tab="prec">Precedents</div>
+      <div class="tab" data-tab="logs">Verifier transcripts</div>
+    </div>
+    <div class="tabpane active" id="tab-docs"><div class="empty">Loading…</div></div>
+    <div class="tabpane" id="tab-prec"><div class="empty">Loading…</div></div>
+    <div class="tabpane" id="tab-logs"><div class="empty">Loading…</div></div>
+  </div>
+
+  <h2 class="sec">Real-world impact <span class="hint">— the same loop on the advocate's actual case</span></h2>
+  <div class="panel" id="realPanel"><div class="empty">Loading…</div></div>
 </main>
 
-<footer>
-  Demo runs on a fully synthetic case. Real documents live in <code>/data/</code> (gitignored) and are never committed.
-  Grading rubrics: <code>/rubric/kb_invariants.md</code>, <code>/rubric/petition_rubric.md</code>. Verifier transcripts: <code>/logs/</code>.
+<footer class="wrap">
+  Demo runs on a fully synthetic, fictional case. Real case documents live in <code>/data/</code> (gitignored) and are never committed; real-run artifacts stay in <code>data/_run/</code> (also gitignored). Grading rubrics: <code>/rubric/kb_invariants.md</code>, <code>/rubric/petition_rubric.md</code>.
 </footer>
 
 <script>
-const $ = s => document.querySelector(s);
-const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const fmt = n => (n==null||isNaN(n))?String(n):Number(n).toLocaleString("en-IN");
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=n=>(n==null||isNaN(n))?String(n):Number(n).toLocaleString("en-IN");
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let TRACE=null, busy=false;
 
-let lastRecord = null;
-
-// ---- minimal markdown renderer (headings, bold, code, hr, lists, tables) ----
+/* ---------- markdown ---------- */
 function md(src){
-  const lines = src.replace(/\r/g,"").split("\n");
-  let html="", i=0, inList=false;
-  const inline = t => esc(t)
-    .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
-    .replace(/`([^`]+?)`/g,"<code>$1</code>")
-    .replace(/\*(?!\s)(.+?)\*/g,"<em>$1</em>");
-  const closeList=()=>{ if(inList){html+="</ul>";inList=false;} };
-  while(i<lines.length){
-    let l=lines[i];
-    if(/^\s*\|.*\|\s*$/.test(l) && i+1<lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i+1])){
-      const head=l.split("|").slice(1,-1).map(c=>c.trim());
-      i+=2; let rows=[];
-      while(i<lines.length && /^\s*\|.*\|\s*$/.test(lines[i])){
-        rows.push(lines[i].split("|").slice(1,-1).map(c=>c.trim())); i++;
-      }
-      closeList();
-      html+="<table><thead><tr>"+head.map(h=>"<th>"+inline(h)+"</th>").join("")+"</tr></thead><tbody>"+
-        rows.map(r=>"<tr>"+r.map(c=>"<td>"+inline(c)+"</td>").join("")+"</tr>").join("")+"</tbody></table>";
-      continue;
-    }
+  const lines=src.replace(/\r/g,"").split("\n");let html="",i=0,inList=false;
+  const inline=t=>esc(t).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/`([^`]+?)`/g,"<code>$1</code>").replace(/(^|[^*])\*(?!\s)([^*]+?)\*/g,"$1<em>$2</em>");
+  const close=()=>{if(inList){html+="</ul>";inList=false;}};
+  while(i<lines.length){let l=lines[i];
+    if(/^\s*\|.*\|\s*$/.test(l)&&i+1<lines.length&&/^\s*\|[\s:|-]+\|\s*$/.test(lines[i+1])){
+      const head=l.split("|").slice(1,-1).map(c=>c.trim());i+=2;let rows=[];
+      while(i<lines.length&&/^\s*\|.*\|\s*$/.test(lines[i])){rows.push(lines[i].split("|").slice(1,-1).map(c=>c.trim()));i++;}
+      close();html+="<table><thead><tr>"+head.map(h=>"<th>"+inline(h)+"</th>").join("")+"</tr></thead><tbody>"+rows.map(r=>"<tr>"+r.map(c=>"<td>"+inline(c)+"</td>").join("")+"</tr>").join("")+"</tbody></table>";continue;}
     let m;
-    if(m=l.match(/^(#{1,4})\s+(.*)$/)){ closeList(); const n=m[1].length; html+=`<h${n}>${inline(m[2])}</h${n}>`; }
-    else if(/^\s*(-{3,}|\*{3,})\s*$/.test(l)){ closeList(); html+="<hr>"; }
-    else if(m=l.match(/^\s*[-*]\s+(.*)$/)){ if(!inList){html+="<ul>";inList=true;} html+="<li>"+inline(m[1])+"</li>"; }
-    else if(l.trim()===""){ closeList(); }
-    else { closeList(); html+="<p>"+inline(l)+"</p>"; }
-    i++;
-  }
-  closeList();
-  return html;
+    if(m=l.match(/^(#{1,4})\s+(.*)$/)){close();const n=m[1].length;html+=`<h${n}>${inline(m[2])}</h${n}>`;}
+    else if(/^\s*(-{3,}|\*{3,})\s*$/.test(l)){close();html+="<hr>";}
+    else if(m=l.match(/^\s*[-*]\s+(.*)$/)){if(!inList){html+="<ul>";inList=true;}html+="<li>"+inline(m[1])+"</li>";}
+    else if(/^\s*>\s?/.test(l)){close();html+="<blockquote>"+inline(l.replace(/^\s*>\s?/,""))+"</blockquote>";}
+    else if(l.trim()===""){close();}
+    else{close();html+="<p>"+inline(l)+"</p>";}
+    i++;}
+  close();return html;
 }
 
-// ---- stage strip ----
-function setStage(k,cls){ const el=document.querySelector(`.stage[data-k="${k}"]`); if(el){el.className="stage "+cls;} }
-function resetStages(){ ["ingest","reconcile","verify_kb","draft","verify_petition"].forEach(k=>setStage(k,"")); }
+/* ---------- stage strip ---------- */
+function setStage(k,cls){const el=document.querySelector(`.stage[data-k="${k}"]`);if(el)el.className="stage "+cls;}
+function resetStages(){["ingest","reconcile","verify_kb","draft","verify_petition"].forEach(k=>setStage(k,""));}
+function setStatus(t,working){$("#status").innerHTML=(working?'<span class="spin"></span>':'')+esc(t);}
 
-// ---- renderers ----
-function renderDocs(docTraces){
-  if(!docTraces.length){ $("#docs").innerHTML='<div class="empty">…</div>'; return; }
-  $("#docs").innerHTML = docTraces.map(d=>{
-    const chips = d.results.map(r=>{
-      let label=r.classification;
-      if(r.classification==="contradiction") label="contradiction ⚠";
-      return `<span class="chip ${r.classification}">${esc(r.field)}: ${esc(label)}</span>`;
-    }).join("");
+/* ---------- renderers ---------- */
+function renderDocs(docs){
+  if(!docs.length){$("#docs").innerHTML='<div class="empty">…</div>';return;}
+  $("#docs").innerHTML=docs.map(d=>{
+    const chips=(d.results||[]).map(r=>{let lab=r.classification==="contradiction"?"contradiction ⚠":(r.classification==="skipped_off_stream"?"off-stream ⤫":r.classification);
+      return `<span class="chip ${r.classification}">${esc(r.field)}: ${esc(lab)}</span>`;}).join("");
     const name=d.source_doc.split("/").pop();
-    return `<div class="doc ${d.stream}">
-      <div class="dt">${esc(name)}</div>
-      <div class="ds">${esc(d.stream)} · ${esc(d.source_type)} · ${d.extracted} facts extracted</div>
-      <div class="chips">${chips}</div></div>`;
+    return `<div class="doc ${d.stream}"><div class="dt">${esc(name)}</div><div class="ds">${esc(d.stream)} · ${esc(d.source_type)} · ${d.extracted} facts</div><div class="chips">${chips}</div></div>`;
   }).join("");
 }
-function activeFacts(rec){ return (rec.facts||[]).filter(f=>!f.superseded); }
+const activeFacts=rec=>(rec.facts||[]).filter(f=>!f.superseded);
 function renderFacts(rec){
   const facts=activeFacts(rec);
-  if(!facts.length){ $("#facts").innerHTML='<div class="empty">No facts yet.</div>'; return; }
-  $("#facts").innerHTML = `<table><thead><tr><th>id</th><th>field</th><th>value</th><th>source</th></tr></thead><tbody>`+
-    facts.map(f=>`<tr>
-      <td class="fid">${esc(f.id)}</td>
-      <td>${esc(f.field)}${f.needs_human_review?'<span class="flag">review</span>':''}</td>
-      <td>${esc(f.value)}</td>
-      <td><span class="sdot ${f.stream}"></span>${esc(f.source_type)}</td></tr>`).join("")+`</tbody></table>`;
+  if(!facts.length){$("#facts").innerHTML='<div class="empty">No facts yet.</div>';return;}
+  $("#facts").innerHTML=`<table><thead><tr><th>id</th><th>field</th><th>value</th><th>source</th></tr></thead><tbody>`+
+    facts.map(f=>`<tr class="factrow" id="fact-${esc(f.id)}"><td class="fid">${esc(f.id)}</td><td>${esc(f.field)}${f.needs_human_review?'<span class="flag">review</span>':''}</td><td>${esc(f.value)}</td><td><span class="sdot ${f.stream}"></span>${esc(f.source_type)}</td></tr>`).join("")+`</tbody></table>`;
 }
 function renderContradictions(rec){
-  const cs=rec.contradictions||[];
-  const el=$("#contradictions");
-  if(!cs.length){ el.className="contradiction-panel";
-    el.innerHTML="None yet. The loop parks cross-stream conflicts here instead of guessing."; return; }
-  el.className="contradiction-panel hit";
-  el.innerHTML = cs.map(c=>`<div class="cd">
-    <div class="cf">⚠ ${esc(c.field)} — ${esc(c.status)}</div>
-    ${c.values.map(v=>`<div class="cv"><span class="sdot ${v.stream}"></span>
-      <strong>${esc(v.value)}</strong> — ${esc(v.source_type)} (${esc(v.stream)})</div>`).join("")}
-    <div class="cv" style="color:var(--muted);margin-top:6px">Flagged for human resolution; not silently overwritten.</div>
-  </div>`).join("");
+  const cs=rec.contradictions||[],el=$("#contradictions");
+  if(!cs.length){el.className="cpanel";el.innerHTML="None yet. Cross-stream conflicts park here for a human.";return;}
+  el.className="cpanel hit";
+  el.innerHTML=cs.map(c=>`<div class="cd"><div class="cf">⚠ ${esc(c.field)} — ${esc(c.status)}</div>${c.values.map(v=>`<div class="cv"><span class="sdot ${v.stream}"></span><strong>${esc(v.value)}</strong> — ${esc(v.source_type)} (${esc(v.stream)})</div>`).join("")}<div class="cv" style="color:var(--muted);margin-top:6px">Flagged for human resolution; not silently overwritten.</div></div>`).join("");
 }
 function renderTimeline(rec){
   const cl=rec.changelog||[];
-  if(!cl.length){ $("#timeline").innerHTML='<li class="empty">…</li>'; return; }
-  $("#timeline").innerHTML = cl.slice().reverse().map(e=>`<li class="${e.action}">
-    <span class="act">${esc(e.action)}</span> <span class="sm">${esc(e.summary)}</span></li>`).join("");
+  if(!cl.length){$("#timeline").innerHTML='<li class="empty">…</li>';return;}
+  $("#timeline").innerHTML=cl.slice().reverse().map(e=>`<li class="${e.action}"><span class="act">${esc((e.action||"").replace(/_/g," "))}</span> <span class="sm">${esc(e.summary)}</span></li>`).join("");
 }
-function renderRecord(rec){ lastRecord=rec; renderFacts(rec); renderContradictions(rec); renderTimeline(rec); }
-
-function renderKbVerify(payload){
-  const v=payload.verdict, det=v.deterministic||v;
-  const pass = v.result==="PASS";
-  let html=`<div class="verdict"><span class="pill ${pass?'pass':'fail'}">${pass?'PASS — committed':'FAIL — not committed'}</span>
-    <span class="hint">deterministic invariant gate + fresh-context LLM cross-check</span></div>`;
-  html+=`<div class="checks">`+ (det.must||[]).map(c=>`<div class="check ${c.status}">
-    <span class="m">${esc(c.id)} ${c.status==='PASS'?'✓':'✗'}</span><span class="nt">${esc(c.note)}</span></div>`).join("")+`</div>`;
-  if(v.llm && !v.llm.error && v.llm.result){
-    html+=`<div class="hint" style="margin-top:10px">Independent LLM verifier (fresh context) returned: <strong>${esc(v.llm.result)}</strong>.</div>`;
-  }
-  $("#kbVerify").innerHTML=html;
+function renderRecord(rec){renderFacts(rec);renderContradictions(rec);renderTimeline(rec);}
+function renderKbVerify(v){
+  const pass=v.result==="PASS";
+  let h=`<div class="verdict"><span class="pill ${pass?'pass':'fail'}">${pass?'PASS — committed':'FAIL — not committed'}</span><span class="hint">deterministic invariant gate + fresh-context Opus cross-check${v.llm_result?` (LLM: ${esc(v.llm_result)})`:''}</span></div>`;
+  h+=`<div class="checks">`+(v.must||[]).map(c=>`<div class="check ${c.status}"><span class="m">${esc(c.id)} ${c.status==='PASS'?'✓':'✗'}</span><span class="nt">${esc(c.note)}</span></div>`).join("")+`</div>`;
+  $("#kbVerify").innerHTML=h;
 }
-
+function petitionHtml(pet){
+  // make [F12] / [F12], [F13] citations clickable
+  let html=md(pet);
+  html=html.replace(/\[F(\d+)\]/g,(m,n)=>`<span class="fcite" data-fid="F${n.padStart(3,'0')}">[F${n}]</span>`);
+  return html;
+}
+function wireCites(){
+  $$(".fcite").forEach(el=>el.addEventListener("click",()=>{
+    const row=document.getElementById("fact-"+el.dataset.fid);
+    if(row){row.scrollIntoView({block:"center",behavior:"smooth"});row.classList.add("flash");setTimeout(()=>row.classList.remove("flash"),1400);}
+  }));
+}
 function renderAttempt(att){
-  // petition document
-  let inj = att.injected_error?`<div class="injected">⚠ DEMO: an arithmetic error was deliberately injected into this draft to exercise the verifier.</div>`:"";
-  $("#petitionWrap").innerHTML = `<div class="attempt-tag">Draft attempt ${att.attempt}</div>${inj}<div class="doc-view">${md(att.petition)}</div>`;
+  const inj=att.injected_error?`<div class="callout" style="background:var(--warn-bg);border-color:#ecd9a6;color:var(--warn)">⚠ DEMO: an arithmetic error was deliberately injected into this draft to exercise the verifier.</div>`:"";
+  $("#petitionWrap").innerHTML=`<div class="attempt-tag">Draft attempt ${att.attempt}</div>${inj}<div class="doc-view">${petitionHtml(att.petition)}</div>`;
+  wireCites();
+  const pass=att.result==="pass",rc=att.arithmetic.recomputed,claimed=att.arithmetic.petition_claimed||{};
+  const loss=rc.loss_of_future_earning,med=rc.medical_expenses;
+  const lossMatch=loss&&claimed.loss_of_earning!=null&&Number(claimed.loss_of_earning)===loss.amount;
+  const medMatch=med&&claimed.medical_expenses!=null&&Number(claimed.medical_expenses)===med.amount;
+  let h=`<div class="verdict"><span class="pill ${pass?'pass':'fail'}">${pass?'PASS':'REVISE'}</span><span class="hint">attempt ${att.attempt} · arithmetic re-derived independently from the KB</span></div>`;
+  h+=`<div class="arith"><div class="box"><h4>Verifier re-derived (from KB)</h4>${loss?`<div>Loss of future earning: <span class="num">₹${fmt(loss.amount)}</span></div><div class="hint">${esc(loss.formula)}</div>`:`<div class="hint">insufficient KB facts</div>`}<div style="margin-top:6px">Medical expenses: <span class="num">₹${fmt(med?med.amount:0)}</span></div><div class="hint">${esc(med?med.formula:"")}</div></div>
+    <div class="box"><h4>Petition claimed</h4><div>Loss of future earning: <span class="num">₹${fmt(claimed.loss_of_earning)}</span> <span class="${lossMatch?'match':'mismatch'}">${lossMatch?'✓ match':'✗ mismatch'}</span></div><div style="margin-top:6px">Medical expenses: <span class="num">₹${fmt(claimed.medical_expenses)}</span> <span class="${medMatch?'match':'mismatch'}">${medMatch?'✓ match':'✗ mismatch'}</span></div><div style="margin-top:6px">Grand total: <span class="num">₹${fmt(claimed.grand_total)}</span></div></div></div>`;
+  h+=`<div class="checks" style="margin-top:12px">`+(att.must||[]).map(c=>`<div class="check ${c.status}"><span class="m">${esc(c.id)} ${c.status==='PASS'?'✓':(c.status==='FAIL'?'✗':'~')}</span><span class="nt">${esc(c.note)}</span></div>`).join("")+`</div>`;
+  if(att.feedback_to_drafter&&!pass)h+=`<div class="feedback"><strong>Feedback fed back to the drafter:</strong>\n${esc(att.feedback_to_drafter)}</div>`;
+  $("#petVerify").innerHTML=h;
+}
 
-  // verifier verdict
-  const pass = att.result==="pass";
-  const rc = att.arithmetic.recomputed, claimed = att.arithmetic.petition_claimed||{};
-  const loss = rc.loss_of_future_earning, med = rc.medical_expenses;
-  const lossMatch = loss && claimed.loss_of_earning!=null && Number(claimed.loss_of_earning)===loss.amount;
-  const medMatch = med && claimed.medical_expenses!=null && Number(claimed.medical_expenses)===med.amount;
-  let html=`<div class="verdict"><span class="pill ${pass?'pass':'fail'}">${pass?'PASS':'REVISE'}</span>
-     <span class="hint">attempt ${att.attempt} · arithmetic re-derived independently from the KB</span></div>`;
-  html+=`<div class="arith">
-    <div class="box"><h4>Verifier re-derived (from KB)</h4>
-      ${loss?`<div>Loss of future earning: <span class="num">₹${fmt(loss.amount)}</span></div>
-        <div class="hint">${esc(loss.formula)}</div>`:`<div class="hint">insufficient KB facts</div>`}
-      <div style="margin-top:6px">Medical expenses: <span class="num">₹${fmt(med?med.amount:0)}</span></div>
-      <div class="hint">${esc(med?med.formula:"")}</div>
-    </div>
-    <div class="box"><h4>Petition claimed</h4>
-      <div>Loss of future earning: <span class="num">₹${fmt(claimed.loss_of_earning)}</span>
-        <span class="${lossMatch?'match':'mismatch'}">${lossMatch?'✓ match':'✗ mismatch'}</span></div>
-      <div style="margin-top:6px">Medical expenses: <span class="num">₹${fmt(claimed.medical_expenses)}</span>
-        <span class="${medMatch?'match':'mismatch'}">${medMatch?'✓ match':'✗ mismatch'}</span></div>
-      <div style="margin-top:6px">Grand total: <span class="num">₹${fmt(claimed.grand_total)}</span></div>
-    </div></div>`;
-  html+=`<div class="checks" style="margin-top:12px">`+ (att.must||[]).map(c=>`<div class="check ${c.status}">
-    <span class="m">${esc(c.id)} ${c.status==='PASS'?'✓':(c.status==='FAIL'?'✗':'~')}</span>
-    <span class="nt">${esc(c.note)}</span></div>`).join("")+`</div>`;
-  if(att.feedback_to_drafter && !pass){
-    html+=`<div class="feedback"><strong>Feedback fed back to the drafter:</strong>\n${esc(att.feedback_to_drafter)}</div>`;
+/* ---------- partial record for replay build-up ---------- */
+function partialRecord(rec,revealedDocs,clCount){
+  const inDoc=sd=>revealedDocs.includes(sd);
+  return {
+    facts:rec.facts.filter(f=>inDoc(f.source_doc)),
+    contradictions:rec.contradictions.filter(c=>c.values.every(v=>inDoc(v.source_doc))),
+    changelog:rec.changelog.slice(0,clCount),
+  };
+}
+function renderFinal(){
+  if(!TRACE)return;
+  renderDocs(TRACE.ingest); renderRecord(TRACE.record); renderKbVerify(TRACE.kb_verify);
+  const atts=(TRACE.draft&&TRACE.draft.attempts)||[];
+  if(atts.length)renderAttempt(atts[atts.length-1]);
+  ["ingest","reconcile","verify_kb","draft","verify_petition"].forEach(k=>setStage(k,"done"));
+  fillStats();
+}
+
+/* ---------- replay ---------- */
+async function replay(){
+  if(busy||!TRACE)return; busy=true; $("#replayBtn").disabled=true; $("#liveBtn").disabled=true;
+  resetStages(); $("#docs").innerHTML='<div class="empty">…</div>'; $("#facts").innerHTML='<div class="empty">…</div>';
+  $("#contradictions").className="cpanel"; $("#contradictions").innerHTML="Watching for conflicts…";
+  $("#timeline").innerHTML=""; $("#kbVerify").innerHTML='<div class="empty">…</div>';
+  $("#petitionWrap").innerHTML='<div class="empty">…</div>'; $("#petVerify").innerHTML='<div class="empty">…</div>';
+  setStage("ingest","active"); setStage("reconcile","active");
+  const revealed=[]; let cl=0;
+  for(let i=0;i<TRACE.ingest.length;i++){
+    const d=TRACE.ingest[i]; revealed.push(d.source_doc); cl+=(d.extracted||0);
+    setStatus(`Ingesting ${i+1}/${TRACE.ingest.length}: ${d.source_doc.split("/").pop()}`,true);
+    renderDocs(TRACE.ingest.slice(0,i+1));
+    const part=partialRecord(TRACE.record,revealed,cl); renderRecord(part);
+    if(part.contradictions.length){const el=$("#contradictions");if(!el.classList.contains("hit"))el.classList.add("hit");}
+    await sleep(820);
   }
-  $("#petVerify").innerHTML=html;
+  setStage("ingest","done"); setStage("reconcile","done");
+  setStatus("Verifying the knowledge base in a fresh context…",true); setStage("verify_kb","active"); await sleep(700);
+  renderKbVerify(TRACE.kb_verify); setStage("verify_kb",TRACE.kb_verify.committed?"done":"failed"); await sleep(500);
+  const atts=(TRACE.draft&&TRACE.draft.attempts)||[];
+  for(let a=0;a<atts.length;a++){
+    setStage("draft","active"); setStatus(`Drafting petition (attempt ${a+1})…`,true); await sleep(700);
+    renderAttempt(atts[a]);
+    if(atts[a].result==="pass"){setStage("draft","done");setStage("verify_petition","done");}
+    else{setStage("verify_petition","failed");setStatus(`Verifier rejected attempt ${a+1} — revising…`,true);await sleep(900);}
+  }
+  setStatus(TRACE.draft&&TRACE.draft.passed?`Done — petition passed after ${TRACE.draft.revisions} revision(s).`:"Finished.",false);
+  fillStats(); busy=false; $("#replayBtn").disabled=false; $("#liveBtn").disabled=false;
 }
 
-// ---- run ----
+/* ---------- live (SSE) ---------- */
 let es=null;
-function run(){
-  if(es){ es.close(); }
-  resetStages();
-  $("#runBtn").disabled=true;
-  $("#docs").innerHTML='<div class="empty">…</div>';
-  $("#facts").innerHTML='<div class="empty">…</div>';
-  $("#kbVerify").innerHTML='<div class="empty">…</div>';
-  $("#petitionWrap").innerHTML='<div class="empty">…</div>';
-  $("#petVerify").innerHTML='<div class="empty">…</div>';
-  $("#contradictions").className="contradiction-panel";
-  $("#contradictions").innerHTML="Watching for conflicts…";
-  const inject = $("#injectBox").checked ? 1 : 0;
-  const docTraces=[];
-  setStatus("Connecting…", true);
-  es = new EventSource(`/api/run-stream?inject_error=${inject}&use_llm=1`);
-
-  es.addEventListener("start", e=>{ setStage("ingest","active"); setStatus("Ingesting documents…",true); });
-  es.addEventListener("ingest", e=>{
-    const p=JSON.parse(e.data); docTraces.push(p.doc); renderDocs(docTraces);
-    setStage("ingest","active"); setStage("reconcile","active"); renderRecord(p.record);
-    setStatus(`Ingested ${p.index+1}/${p.total} documents…`,true);
-  });
-  es.addEventListener("kb_verify", e=>{
-    const p=JSON.parse(e.data); setStage("ingest","done"); setStage("reconcile","done");
-    renderRecord(p.record); renderKbVerify(p);
-    setStage("verify_kb", p.committed?"done":"failed");
-    setStatus(p.committed?"KB verified & committed. Drafting…":"KB verification failed — not committed.", p.committed);
-    if(p.committed){ setStage("draft","active"); }
-  });
-  es.addEventListener("draft_attempt", e=>{
-    const att=JSON.parse(e.data); renderAttempt(att);
-    if(att.result==="pass"){ setStage("draft","done"); setStage("verify_petition","done"); }
-    else { setStage("draft","active"); setStage("verify_petition","failed"); setStatus(`Verifier rejected attempt ${att.attempt} — revising…`,true); }
-  });
-  es.addEventListener("draft_done", e=>{
-    const p=JSON.parse(e.data);
-    setStage("draft", p.passed?"done":"failed");
-    setStage("verify_petition", p.passed?"done":"failed");
-    setStatus(p.passed?`Petition passed (after ${p.revisions} revision${p.revisions===1?'':'s'}).`:"Petition still failing after revisions.", p.passed);
-  });
-  es.addEventListener("done", e=>{ es.close(); $("#runBtn").disabled=false; });
-  es.addEventListener("error", e=>{
-    let msg="Stream error.";
-    try{ if(e.data){ msg=JSON.parse(e.data).message||msg; } }catch(_){}
-    setStatus(msg,false); $("#runBtn").disabled=false; if(es) es.close();
-  });
+function runLive(){
+  if(busy)return; busy=true; $("#replayBtn").disabled=true; $("#liveBtn").disabled=true;
+  resetStages(); const docTraces=[];
+  ["#docs","#facts","#kbVerify","#petitionWrap","#petVerify"].forEach(s=>$(s).innerHTML='<div class="empty">…</div>');
+  $("#contradictions").className="cpanel"; $("#contradictions").innerHTML="Watching for conflicts…";
+  const inject=$("#injectBox").checked?1:0;
+  setStatus("Connecting to Opus…",true);
+  es=new EventSource(`/api/run-stream?inject_error=${inject}&use_llm=1`);
+  es.addEventListener("start",()=>{setStage("ingest","active");setStatus("Ingesting documents…",true);});
+  es.addEventListener("ingest",e=>{const p=JSON.parse(e.data);docTraces.push(p.doc);renderDocs(docTraces);setStage("ingest","active");setStage("reconcile","active");renderRecord(p.record);setStatus(`Ingested ${p.index+1}/${p.total}…`,true);});
+  es.addEventListener("kb_verify",e=>{const p=JSON.parse(e.data);setStage("ingest","done");setStage("reconcile","done");renderRecord(p.record);renderKbVerify(p.verdict.deterministic||p.verdict);setStage("verify_kb",p.committed?"done":"failed");setStatus(p.committed?"KB committed. Drafting…":"KB failed — not committed.",p.committed);if(p.committed)setStage("draft","active");});
+  es.addEventListener("draft_attempt",e=>{const a=JSON.parse(e.data);renderAttempt(a);if(a.result==="pass"){setStage("draft","done");setStage("verify_petition","done");}else{setStage("verify_petition","failed");setStatus(`Verifier rejected attempt ${a.attempt} — revising…`,true);}});
+  es.addEventListener("draft_done",e=>{const p=JSON.parse(e.data);setStage("draft",p.passed?"done":"failed");setStage("verify_petition",p.passed?"done":"failed");setStatus(p.passed?`Petition passed (after ${p.revisions} revision(s)).`:"Still failing after revisions.",false);});
+  es.addEventListener("done",()=>{es.close();busy=false;$("#replayBtn").disabled=false;$("#liveBtn").disabled=false;});
+  es.addEventListener("error",e=>{let m="Stream error.";try{if(e.data)m=JSON.parse(e.data).error||m;}catch(_){}setStatus(m,false);busy=false;$("#replayBtn").disabled=false;$("#liveBtn").disabled=false;if(es)es.close();});
 }
-function setStatus(t,ok){ $("#status").innerHTML=(ok&&t&&!t.includes("fail")&&!t.includes("error")?'<span class="spin"></span>':'')+esc(t); }
 
-$("#runBtn").addEventListener("click", run);
+/* ---------- stats strip ---------- */
+function fillStats(){
+  const rec=TRACE?TRACE.record:null;
+  const nfacts=rec?activeFacts(rec).length:"—";
+  const ncon=rec?rec.contradictions.length:"—";
+  let loss=null;
+  try{loss=TRACE.draft.attempts.slice(-1)[0].arithmetic.recomputed.loss_of_future_earning.amount;}catch(_){}
+  const lossStr=loss?("₹"+(loss>=1e7?(loss/1e7).toFixed(2)+" Cr":fmt(loss))):"—";
+  const items=[["weeks → minutes","time to draft"],[nfacts+" facts","reconciled, all sourced"],[ncon+" contradiction"+(ncon==1?"":"s"),"caught autonomously"],[lossStr,"loss verified independently"]];
+  $("#statstrip").innerHTML=items.map(([v,l])=>`<div class="stat"><div class="v">${esc(v)}</div><div class="l">${esc(l)}</div></div>`).join("");
+}
 
-// boot
+/* ---------- explore tabs ---------- */
+$$(".tab").forEach(t=>t.addEventListener("click",()=>{
+  $$(".tab").forEach(x=>x.classList.remove("active"));t.classList.add("active");
+  $$(".tabpane").forEach(p=>p.classList.remove("active"));$("#tab-"+t.dataset.tab).classList.add("active");
+}));
+function loadCorpus(){fetch("/api/corpus").then(r=>r.json()).then(d=>{
+  $("#tab-docs").innerHTML=(d.docs||[]).map(x=>`<details class="docitem"><summary>${esc(x.file.split("/").pop())} <span class="meta">— ${esc(x.stream)} · ${esc(x.source_type)}</span></summary><pre class="src">${esc(x.text)}</pre></details>`).join("");
+}).catch(()=>{});}
+function loadPrec(){fetch("/api/precedent").then(r=>r.json()).then(d=>{
+  $("#tab-prec").innerHTML=(d.notes||[]).map(n=>`<details class="docitem"><summary>${esc(n.name)}</summary><div class="md-note">${md(n.text)}</div></details>`).join("");
+}).catch(()=>{});}
+function loadLogs(){fetch("/api/logs").then(r=>r.json()).then(d=>{
+  let h="";["kb_verify","petition_verify"].forEach(k=>{if(d[k])h+=`<details class="docitem" open><summary>${esc(d[k].file)}</summary><div class="md-note">${md(d[k].text)}</div></details>`;});
+  $("#tab-logs").innerHTML=h||'<div class="empty">No verifier transcripts yet — run the loop.</div>';
+}).catch(()=>{});}
+function loadReal(){fetch("/api/real-stats").then(r=>r.json()).then(s=>{
+  if(!s||!s.total_documents){$("#realPanel").innerHTML='<div class="empty">No real-corpus stats committed.</div>';return;}
+  const streams=Object.entries(s.by_stream||{}).map(([k,v])=>`${v} ${k}`).join(" · ");
+  const kinds=Object.entries(s.by_kind||{}).map(([k,v])=>`${v} ${k}`).join(" · ");
+  $("#realPanel").innerHTML=`<div class="callout">The exact same loop runs on the advocate's real catastrophic-injury case. Scans and report photos are read by <strong>Opus 4.8 vision-OCR</strong>; every real-run artifact is written to a gitignored folder, so no patient data is ever committed or deployed.</div>
+   <div class="realgrid"><div class="realstat"><div class="v">${s.total_documents}</div><div class="l">real documents</div></div>
+   <div class="realstat"><div class="v">${esc(streams)}</div><div class="l">by stream</div></div>
+   <div class="realstat"><div class="v">${esc(kinds)}</div><div class="l">by type</div></div></div>
+   <div class="hint" style="margin-top:10px">${esc(s.note||"")}</div>`;
+}).catch(()=>{});}
+
+/* ---------- boot ---------- */
+$("#replayBtn").addEventListener("click",replay);
+$("#liveBtn").addEventListener("click",runLive);
 fetch("/api/health").then(r=>r.json()).then(h=>{
   $("#modelBadge").textContent="model: "+h.model;
-  $("#keyBadge").textContent = h.api_key_present? "API key: set" : "API key: NOT set";
-  $("#keyBadge").className = "badge "+(h.api_key_present?"ok":"no");
-  if(!h.api_key_present){ setStatus("Set ANTHROPIC_API_KEY on the server to run.",false); }
+  $("#keyBadge").textContent=h.api_key_present?"API key: set":"API key: NOT set";
+  $("#keyBadge").className="badge "+(h.api_key_present?"ok":"no");
+  if(!h.api_key_present){$("#liveBtn").disabled=true;$("#liveBtn").title="Set ANTHROPIC_API_KEY on the server to run live";}
 });
-fetch("/api/state").then(r=>r.json()).then(s=>{
-  if(s.case_record){ renderRecord(s.case_record); }
-  if(s.petition_md){ $("#petitionWrap").innerHTML=`<div class="attempt-tag">Last committed petition</div><div class="doc-view">${md(s.petition_md)}</div>`; }
-}).catch(()=>{});
+$("#repoBadge").href="https://github.com/harykrish/mact-petition-drafter";
+loadCorpus();loadPrec();loadLogs();loadReal();
+fetch("/api/replay").then(r=>r.ok?r.json():null).then(t=>{
+  if(t&&t.record){TRACE=t;renderFinal();setStatus("Loaded a captured run — press Replay to watch it build.",false);}
+  else{fetch("/api/state").then(r=>r.json()).then(s=>{if(s.case_record)renderRecord(s.case_record);if(s.petition_md)$("#petitionWrap").innerHTML=`<div class="doc-view">${petitionHtml(s.petition_md)}</div>`,wireCites();});}
+});
 </script>
 </body>
 </html>
