@@ -2,11 +2,12 @@ services:
   - type: web
     name: mact-petition-drafter
     runtime: python
-    plan: starter
+    plan: free                # free tier (spins down when idle; bump to "starter" to avoid cold starts)
+    healthCheckPath: /api/health
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: ANTHROPIC_API_KEY
-        sync: false        # set in the Render dashboard — never commit the key
+        sync: false            # set this in the Render dashboard — never commit the key
       - key: PYTHON_VERSION
-        value: 3.11.9
+        value: "3.11.9"
