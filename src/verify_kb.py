@@ -151,8 +151,10 @@ def run_deterministic(record: Dict) -> Dict:
     }
 
 
-def verify(record: Dict, use_llm: bool = True, write_log: bool = True) -> Dict:
+def verify(record: Dict, use_llm: bool = True, write_log: bool = True,
+           logs_dir=None) -> Dict:
     """Run the deterministic gate and (optionally) the fresh-context LLM grader."""
+    logs_dir = logs_dir or config.LOGS_DIR
     det = run_deterministic(record)
     llm_result = None
     if use_llm:
@@ -168,14 +170,14 @@ def verify(record: Dict, use_llm: bool = True, write_log: bool = True) -> Dict:
         "llm": llm_result,
     }
     if write_log:
-        _write_log(record, combined)
+        _write_log(record, combined, logs_dir)
     return combined
 
 
-def _write_log(record: Dict, result: Dict) -> None:
-    config.LOGS_DIR.mkdir(parents=True, exist_ok=True)
+def _write_log(record: Dict, result: Dict, logs_dir) -> None:
+    logs_dir.mkdir(parents=True, exist_ok=True)
     ts = store.now_iso().replace(":", "").replace("-", "")
-    path = config.LOGS_DIR / ("kb_verify_%s.md" % ts)
+    path = logs_dir / ("kb_verify_%s.md" % ts)
     det = result["deterministic"]
     lines = ["# KB verification — %s" % store.now_iso(),
              "",

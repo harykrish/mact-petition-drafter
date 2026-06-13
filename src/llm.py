@@ -12,6 +12,7 @@ That separation is the "fresh context" the brief requires.
 """
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
@@ -19,6 +20,11 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from . import config
+
+TEXT_EXTS = {".txt", ".md", ".json", ".csv"}
+IMAGE_MEDIA = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+               ".webp": "image/webp", ".gif": "image/gif"}
+SUPPORTED_EXTS = set(TEXT_EXTS) | {".pdf", ".docx"} | set(IMAGE_MEDIA)
 
 _CLIENT = None
 
@@ -133,7 +139,10 @@ def extract_facts(doc_text: str, stream: str, source_doc: str, source_type: str)
         messages=[{"role": "user", "content": user}],
         output_config={"format": {"type": "json_schema", "schema": _EXTRACT_SCHEMA}},
     )
-    data = _json_from_text(_text_of(message))
+    return _parse_facts(_json_from_text(_text_of(message)), stream, source_doc, source_type)
+
+
+def _parse_facts(data: Dict, stream: str, source_doc: str, source_type: str) -> List[Dict]:
     raws = []
     for item in data.get("facts", []):
         field = str(item.get("field", "")).strip()
@@ -148,6 +157,52 @@ def extract_facts(doc_text: str, stream: str, source_doc: str, source_type: str)
             "extraction_confidence": float(item.get("extraction_confidence", 0.9)),
         })
     return raws
+
+
+def _docx_text(path: str) -> str:
+    from docx import Document  # python-docx
+    doc = Document(path)
+    parts = [p.text for p in doc.paragraphs if p.text.strip()]
+    for table in doc.tables:
+        for row in table.rows:
+            parts.append(" | ".join(c.text for c in row.cells))
+    return "\n".join(parts)
+
+
+def _extract_with_blocks(blocks: List[Dict], stream: str, source_doc: str, source_type: str) -> List[Dict]:
+    """Extraction from non-text input (PDF/image content blocks) via Opus vision."""
+    client = _client()
+    content = list(blocks) + [{"type": "text", "text":
+        "Document type: %s   Stream: %s   Source: %s\nExtract the structured facts from the "
+        "attached document per the rules." % (source_type, stream, source_doc)}]
+    message = client.messages.create(
+        model=config.MODEL,
+        max_tokens=4000,
+        system=_extract_system(),
+        messages=[{"role": "user", "content": content}],
+        output_config={"format": {"type": "json_schema", "schema": _EXTRACT_SCHEMA}},
+    )
+    return _parse_facts(_json_from_text(_text_of(message)), stream, source_doc, source_type)
+
+
+def extract_facts_from_path(path: str, stream: str, source_doc: str, source_type: str) -> List[Dict]:
+    """Multi-format extraction: text/markdown/json/csv, .docx, .pdf, and images."""
+    ext = Path(path).suffix.lower()
+    if ext in TEXT_EXTS:
+        return extract_facts(Path(path).read_text(encoding="utf-8", errors="ignore"),
+                             stream, source_doc, source_type)
+    if ext == ".docx":
+        return extract_facts(_docx_text(path), stream, source_doc, source_type)
+    data = base64.standard_b64encode(Path(path).read_bytes()).decode("ascii")
+    if ext == ".pdf":
+        block = {"type": "document", "source": {"type": "base64",
+                 "media_type": "application/pdf", "data": data}}
+    elif ext in IMAGE_MEDIA:
+        block = {"type": "image", "source": {"type": "base64",
+                 "media_type": IMAGE_MEDIA[ext], "data": data}}
+    else:
+        raise ValueError("unsupported file type: %s" % ext)
+    return _extract_with_blocks([block], stream, source_doc, source_type)
 
 
 # --- 2. KB grading (fresh context) --------------------------------------

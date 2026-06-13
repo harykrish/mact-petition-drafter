@@ -32,14 +32,32 @@ def read_doc(rel_or_abs: str) -> str:
 
 # --- ingest + reconcile one document ------------------------------------
 
+def _resolve_path(source_doc: str) -> Path:
+    p = Path(source_doc)
+    if p.is_absolute():
+        return p
+    sd = str(source_doc).replace("\\", "/")
+    if sd.startswith("data/") or sd.startswith("synthetic/"):
+        return config.BASE_DIR / sd
+    return config.SYNTHETIC_DIR / sd
+
+
 def ingest_document(record: Dict, source_doc: str, stream: str, source_type: str,
                     doc_text: Optional[str] = None) -> Dict:
-    """Extract facts from one document and reconcile them into `record`."""
+    """Extract facts from one document (any supported format) and reconcile them."""
     from . import llm  # imported lazily so non-LLM paths work without a key
-    if doc_text is None:
-        doc_text = read_doc(source_doc)
     stored_doc = _normalize_source(source_doc)
-    raws = llm.extract_facts(doc_text, stream, stored_doc, source_type)
+    if doc_text is not None:
+        raws = llm.extract_facts(doc_text, stream, stored_doc, source_type)
+    else:
+        path = _resolve_path(source_doc)
+        ext = path.suffix.lower()
+        if ext in llm.TEXT_EXTS:
+            # plain text → the function the tests stub
+            raws = llm.extract_facts(path.read_text(encoding="utf-8", errors="ignore"),
+                                     stream, stored_doc, source_type)
+        else:
+            raws = llm.extract_facts_from_path(str(path), stream, stored_doc, source_type)
     results = reconcile.reconcile_facts(record, raws)
     return {
         "source_doc": stored_doc,
@@ -58,6 +76,81 @@ def _normalize_source(source_doc: str) -> str:
     return "synthetic/" + sd
 
 
+# --- real corpus (the user's actual /data/ documents) -------------------
+
+_SOURCE_TYPE_HINTS = [
+    ("fir", "FIR"), ("charge", "Charge Sheet"), ("intimation", "Police Intimation"),
+    ("disab", "Disability Assessment Certificate"), ("discharge", "Discharge Summary"),
+    ("summary", "Interim Summary"), ("dossier", "Interim Summary"), ("interim", "Interim Summary"),
+    ("bill", "Hospital Bill"), ("invoice", "Hospital Bill"),
+    ("mri", "Imaging Report"), ("ct", "Imaging Report"), ("scan", "Imaging Report"),
+    ("xray", "Imaging Report"), ("x-ray", "Imaging Report"), ("ultrasound", "Imaging Report"),
+    ("angio", "Imaging Report"), ("holter", "Imaging Report"), ("lab", "Lab Report"),
+    ("itr", "ITR"), ("return", "ITR"), ("form16", "Form 16"), ("form 16", "Form 16"),
+    ("salary", "Salary Slip"), ("payslip", "Salary Slip"),
+]
+_STREAM_DEFAULT_TYPE = {"police": "Police Document", "medical": "Medical Record",
+                        "financial": "Financial Document"}
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_PDF_BYTES = 28 * 1024 * 1024
+
+
+def _infer_source_type(filename: str, stream: str) -> str:
+    name = filename.lower()
+    for kw, t in _SOURCE_TYPE_HINTS:
+        if kw in name:
+            return t
+    return _STREAM_DEFAULT_TYPE.get(stream, "Document")
+
+
+def real_corpus_files(include_images: bool = False):
+    """List ingestible files under data/<stream>/, skipping junk and (by default) images."""
+    from . import llm
+    out = []
+    for stream in config.VALID_STREAMS:
+        d = config.DATA_DIR / stream
+        if not d.exists():
+            continue
+        for p in sorted(d.iterdir()):
+            if not p.is_file() or p.name.startswith(".") or p.name == "_run":
+                continue
+            ext = p.suffix.lower()
+            if ext not in llm.SUPPORTED_EXTS:
+                continue
+            if ext in llm.IMAGE_MEDIA and not include_images:
+                continue
+            size = p.stat().st_size
+            if ext in llm.IMAGE_MEDIA and size > MAX_IMAGE_BYTES:
+                continue
+            if ext == ".pdf" and size > MAX_PDF_BYTES:
+                continue
+            out.append({"path": str(p), "rel": "data/%s/%s" % (stream, p.name),
+                        "stream": stream, "source_type": _infer_source_type(p.name, stream)})
+    return out
+
+
+def run_real_events(include_images: bool = False, use_llm: bool = True):
+    """Run the loop on the user's REAL /data/ documents, writing every artifact to
+    a gitignored directory (config.REAL_PATHS). Never touches the public knowledge/."""
+    paths = config.REAL_PATHS
+    files = real_corpus_files(include_images=include_images)
+    record = store.new_case_record("MACT-REAL-" + store.now_iso()[:10])
+    yield ("start", {"case_id": record["case_id"], "files": files, "output_dir": str(paths.case_record.parent)})
+    for idx, f in enumerate(files):
+        try:
+            trace = ingest_document(record, f["rel"], f["stream"], f["source_type"])
+        except Exception as exc:
+            trace = {"source_doc": f["rel"], "stream": f["stream"], "source_type": f["source_type"],
+                     "extracted": 0, "results": [], "error": str(exc)}
+        yield ("ingest", {"index": idx, "total": len(files), "doc": trace, "record": record})
+    commit = verify_and_commit(record, use_llm=use_llm, paths=paths)
+    yield ("kb_verify", {"verdict": commit["verdict"], "committed": commit["committed"], "record": record})
+    if commit["committed"]:
+        for kind, payload in draft_events(record, use_llm=use_llm, paths=paths):
+            yield (kind, payload)
+    yield ("done", {"record": record, "committed": commit["committed"], "output_dir": str(paths.case_record.parent)})
+
+
 def ingest_with_raws(record: Dict, source_doc: str, stream: str, source_type: str,
                      raws: List[Dict]) -> Dict:
     """Reconcile already-extracted facts (offline path / tests)."""
@@ -72,13 +165,15 @@ def ingest_with_raws(record: Dict, source_doc: str, stream: str, source_type: st
 
 # --- verify + commit -----------------------------------------------------
 
-def verify_and_commit(record: Dict, use_llm: bool = True, commit_git: bool = False) -> Dict:
-    """Verify the candidate KB. Persist to knowledge/ ONLY on pass."""
-    verdict = verify_kb.verify(record, use_llm=use_llm)
+def verify_and_commit(record: Dict, use_llm: bool = True, commit_git: bool = False,
+                      paths=None) -> Dict:
+    """Verify the candidate KB. Persist ONLY on pass, to the case's paths."""
+    paths = paths or config.SYNTHETIC_PATHS
+    verdict = verify_kb.verify(record, use_llm=use_llm, logs_dir=paths.logs_dir)
     committed = False
     if verdict["result"] == "PASS":
-        store.save_case_record(record)
-        store.render_changelog_md(record)
+        store.save_case_record(record, paths.case_record)
+        store.render_changelog_md(record, paths.changelog_md)
         committed = True
         if commit_git:
             verdict["git"] = _git_commit_knowledge(record.get("case_id", "case"))
@@ -117,9 +212,10 @@ def _inject_arithmetic_error(petition_md: str, record: Dict) -> str:
 
 
 def draft_events(record: Dict, max_revisions: int = 2, use_llm: bool = True,
-                 inject_error: bool = False):
+                 inject_error: bool = False, paths=None):
     """Yield ('draft_attempt', attempt_dict) per try, then ('draft_done', summary)."""
     from . import llm
+    paths = paths or config.SYNTHETIC_PATHS
     attempts: List[Dict] = []
     feedback = None
     final_petition = ""
@@ -130,7 +226,7 @@ def draft_events(record: Dict, max_revisions: int = 2, use_llm: bool = True,
         if inject_error and attempt == 0:
             petition = _inject_arithmetic_error(petition, record)
             injected = petition.endswith("-->")
-        report = verify_petition.verify(petition, record, use_llm=use_llm)
+        report = verify_petition.verify(petition, record, use_llm=use_llm, logs_dir=paths.logs_dir)
         att = {
             "attempt": attempt + 1,
             "injected_error": injected,
@@ -150,16 +246,16 @@ def draft_events(record: Dict, max_revisions: int = 2, use_llm: bool = True,
         feedback = report["feedback_to_drafter"]
 
     if final_petition:
-        config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        config.PETITION_PATH.write_text(final_petition, encoding="utf-8")
+        paths.petition.parent.mkdir(parents=True, exist_ok=True)
+        paths.petition.write_text(final_petition, encoding="utf-8")
     yield ("draft_done", {"passed": passed, "revisions": len(attempts) - 1,
                           "attempts": attempts, "final_petition": final_petition})
 
 
 def draft_and_verify(record: Dict, max_revisions: int = 2, use_llm: bool = True,
-                     inject_error: bool = False) -> Dict:
+                     inject_error: bool = False, paths=None) -> Dict:
     summary = {}
-    for kind, payload in draft_events(record, max_revisions, use_llm, inject_error):
+    for kind, payload in draft_events(record, max_revisions, use_llm, inject_error, paths=paths):
         if kind == "draft_done":
             summary = payload
     return summary
@@ -167,9 +263,12 @@ def draft_and_verify(record: Dict, max_revisions: int = 2, use_llm: bool = True,
 
 # --- full run ------------------------------------------------------------
 
-def run_full_events(use_llm: bool = True, commit_git: bool = False, inject_error: bool = False):
+def run_full_events(use_llm: bool = True, commit_git: bool = False, inject_error: bool = False,
+                    paths=None):
     """Drive the whole loop, yielding (event_type, payload) as each stage finishes.
-    The web app wraps these as Server-Sent Events for a live demo."""
+    The web app wraps these as Server-Sent Events for a live demo.
+    `paths` defaults to the public/synthetic locations."""
+    paths = paths or config.SYNTHETIC_PATHS
     manifest = load_manifest()
     record = store.new_case_record(manifest["case_id"])
     yield ("start", {"case_id": record["case_id"], "manifest": manifest})
@@ -179,12 +278,12 @@ def run_full_events(use_llm: bool = True, commit_git: bool = False, inject_error
         yield ("ingest", {"index": idx, "total": len(manifest["ingest_order"]),
                           "doc": trace, "record": record})
 
-    commit = verify_and_commit(record, use_llm=use_llm, commit_git=commit_git)
+    commit = verify_and_commit(record, use_llm=use_llm, commit_git=commit_git, paths=paths)
     yield ("kb_verify", {"verdict": commit["verdict"], "committed": commit["committed"],
                          "record": record})
 
     if commit["committed"]:
-        for kind, payload in draft_events(record, use_llm=use_llm, inject_error=inject_error):
+        for kind, payload in draft_events(record, use_llm=use_llm, inject_error=inject_error, paths=paths):
             yield (kind, payload)
 
     yield ("done", {"record": record, "committed": commit["committed"]})

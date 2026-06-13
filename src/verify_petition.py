@@ -68,7 +68,9 @@ def _eq_amount(a, b) -> bool:
     return na is not None and nb is not None and abs(na - nb) < 0.5
 
 
-def verify(petition_md: str, record: Dict, use_llm: bool = True, write_log: bool = True) -> Dict:
+def verify(petition_md: str, record: Dict, use_llm: bool = True, write_log: bool = True,
+           logs_dir=None) -> Dict:
+    logs_dir = logs_dir or config.LOGS_DIR
     rc = recompute(record)
     must: List[Dict] = []
     feedback: List[str] = []
@@ -162,14 +164,14 @@ def verify(petition_md: str, record: Dict, use_llm: bool = True, write_log: bool
         "llm": llm_result,
     }
     if write_log:
-        _write_log(report)
+        _write_log(report, logs_dir)
     return report
 
 
-def _write_log(report: Dict) -> None:
-    config.LOGS_DIR.mkdir(parents=True, exist_ok=True)
+def _write_log(report: Dict, logs_dir) -> None:
+    logs_dir.mkdir(parents=True, exist_ok=True)
     ts = store.now_iso().replace(":", "").replace("-", "")
-    path = config.LOGS_DIR / ("petition_verify_%s.md" % ts)
+    path = logs_dir / ("petition_verify_%s.md" % ts)
     rc = report["arithmetic"]["recomputed"]
     loss = rc.get("loss_of_future_earning")
     med = rc.get("medical_expenses", {})

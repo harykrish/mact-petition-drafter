@@ -47,6 +47,23 @@ base building up, the contradictions panel lighting up when a conflict is caught
 the changelog timeline, the drafted petition, and the verifier's **independent
 arithmetic re-derivation shown beside the drafter's numbers**.
 
+## Run on your real case (private — never committed)
+
+Drop real documents into `data/{police,medical,financial}/` (any mix of
+`.pdf`, `.docx`, `.txt`, `.md`, `.json`, and images). Opus 4.8 reads PDFs and
+scans directly.
+
+```bash
+python -m scripts.run_real --list            # show what would be ingested (no API calls)
+python -m scripts.run_real                   # documents only (pdf/docx/txt/json)
+python -m scripts.run_real --include-images  # also send scan images to Opus vision
+```
+
+**Every artifact from a real run is written to `data/_run/`, which is gitignored** —
+real PII is never committed. The public `knowledge/` directory is only ever
+written by the synthetic demo. The CLI prints field names and classification
+counts, not extracted values.
+
 ## Tests (no API key required)
 
 The deterministic engine and the full pipeline/SSE wiring are tested offline by

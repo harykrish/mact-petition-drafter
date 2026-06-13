@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -43,6 +44,29 @@ KB_INVARIANTS_PATH = RUBRIC_DIR / "kb_invariants.md"
 PETITION_RUBRIC_PATH = RUBRIC_DIR / "petition_rubric.md"
 
 VALID_STREAMS = ("medical", "police", "financial")
+
+
+@dataclass(frozen=True)
+class CasePaths:
+    """Where a run's artifacts are written. Synthetic → public (tracked);
+    real → a gitignored directory so real PII never lands in the public repo."""
+    case_record: Path
+    changelog_md: Path
+    petition: Path
+    logs_dir: Path
+
+
+# Synthetic / demo run → committed, public.
+SYNTHETIC_PATHS = CasePaths(CASE_RECORD_PATH, CHANGELOG_MD_PATH, PETITION_PATH, LOGS_DIR)
+
+# Real run → under /data/ (which is gitignored), so nothing is ever committed.
+REAL_OUTPUT_DIR = DATA_DIR / "_run"
+REAL_PATHS = CasePaths(
+    REAL_OUTPUT_DIR / "case_record.json",
+    REAL_OUTPUT_DIR / "changelog.md",
+    REAL_OUTPUT_DIR / "petition_draft.md",
+    REAL_OUTPUT_DIR / "logs",
+)
 
 # --- Reconciliation ------------------------------------------------------
 # Canonical fields the extractor should use. The reconciler keys on these.
