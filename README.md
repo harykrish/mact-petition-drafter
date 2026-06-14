@@ -20,7 +20,7 @@ multiple agents act:
 - **Rehab planning** — milestone tracking, therapy scheduling, equipment needs
 - **AAC communication** — for patients who've lost the ability to speak
 
-Today's demo shows the **legal agent**. The architecture generalizes to every spoke.
+Today's demo shows **NyayaSetu**, the legal agent. The architecture generalizes to every spoke.
 
 ## Architecture
 

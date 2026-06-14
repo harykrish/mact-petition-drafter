@@ -6,7 +6,7 @@ A catastrophic road accident doesn't just create a legal problem. It creates a m
 
 Cambrian builds a living knowledge base from all of it. Every fact sourced, every conflict flagged, every update tracked. From that one KB, multiple agents act — legal drafting, medical advocacy, rehab planning, even AAC communication for patients who've lost the ability to speak.
 
-Today, we're showing the legal agent. Watch.
+Today, we're showing NyayaSetu, the legal agent. Watch.
 
 Nine documents go in. Claude extracts structured facts, and a reconciler catches conflicts across sources. The police report says March fifth, the hospital says March sixth — that contradiction gets flagged, never buried.
 
