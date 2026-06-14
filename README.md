@@ -1,4 +1,4 @@
-# NyayaSetu
+# Cambrian
 
 A **living knowledge base for catastrophic injury** — powering legal drafting,
 medical advocacy, rehab planning, and AAC communication from a single, self-maintaining
@@ -10,7 +10,7 @@ case record.
 > stalled by documentation problems. Families face this while already dealing with
 > the trauma of losing — or watching — a loved one suffer.
 
-NyayaSetu ingests every document in a catastrophic injury case — police reports,
+Cambrian ingests every document in a catastrophic injury case — police reports,
 hospital records, disability certificates, salary slips, insurance papers — and
 builds a **structured, sourced, self-consistent knowledge base**. From that one KB,
 multiple agents act:

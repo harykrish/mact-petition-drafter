@@ -1,5 +1,5 @@
 /**
- * Automated demo video generator for NyayaSetu.
+ * Automated demo video generator for Cambrian.
  *
  * Uses Puppeteer to screenshot the intro slide + live replay,
  * then ffmpeg to stitch frames with the voiceover into an mp4.

@@ -49,7 +49,7 @@ drafter's reasoning chain. A hallucinated citation looks plausible because the
 verifier "remembers" the reasoning that produced it. A miscalculated number passes
 because the verifier saw the same (wrong) arithmetic steps.
 
-### How NyayaSetu implements it
+### How Cambrian implements it
 
 Each verifier runs as a **separate `messages.create` call** with a freshly
 constructed context:

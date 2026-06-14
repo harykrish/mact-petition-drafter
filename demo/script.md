@@ -1,10 +1,10 @@
-# NyayaSetu — 1-Minute Demo Script
+# Cambrian — 1-Minute Demo Script
 
 ## Narration (~60 seconds)
 
 A catastrophic road accident doesn't just create a legal problem. It creates a medical crisis, a financial crisis, and a communication crisis — all at once. The family is buried in hospital records, police reports, insurance papers. Over a million of these cases are stuck in Indian tribunals right now. Ten billion dollars unpaid.
 
-NyayaSetu builds a living knowledge base from all of it. Every fact sourced, every conflict flagged, every update tracked. From that one KB, multiple agents act — legal drafting, medical advocacy, rehab planning, even AAC communication for patients who've lost the ability to speak.
+Cambrian builds a living knowledge base from all of it. Every fact sourced, every conflict flagged, every update tracked. From that one KB, multiple agents act — legal drafting, medical advocacy, rehab planning, even AAC communication for patients who've lost the ability to speak.
 
 Today, we're showing the legal agent. Watch.
 
@@ -21,7 +21,7 @@ One knowledge base. Twelve orchestrated Claude calls. Two independent verificati
 | Time | Screen | Narration cue |
 |------|--------|---------------|
 | 0:00-0:06 | Intro slide | "A catastrophic road accident..." |
-| 0:06-0:13 | Home page — architecture diagram | "NyayaSetu builds a living..." |
+| 0:06-0:13 | Home page — architecture diagram | "Cambrian builds a living..." |
 | 0:13-0:18 | Home page — workflow tiles | "...legal drafting, medical advocacy..." |
 | 0:18-0:28 | Click Replay — documents ingest | "Nine documents go in..." |
 | 0:28-0:34 | Contradiction panel pulses | "The police report says March fifth..." |
