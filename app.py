@@ -28,7 +28,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    # No model name surfaced — the product is Cambrian, not a model demo.
+    # No model name surfaced — the product is NyayaSetu, not a model demo.
     return {"api_key_present": llm.api_key_present()}
 
 
