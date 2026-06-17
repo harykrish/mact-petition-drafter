@@ -25,7 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src import config, llm, pipeline  # noqa: E402
+from src import config, llm, pipeline, supastore  # noqa: E402
 
 
 def main() -> int:
@@ -38,6 +38,10 @@ def main() -> int:
     ap.add_argument("--max", type=int, default=None, help="cap the number of files (cost control)")
     ap.add_argument("--list", action="store_true", help="list ingestible files and exit (no API calls)")
     ap.add_argument("--no-llm-verify", action="store_true", help="deterministic KB gate only")
+    ap.add_argument("--supabase", action="store_true",
+                    help="after the run, push the KB to the shared Supabase (Cambrian) store")
+    ap.add_argument("--case-id", default=None, help="case_id to use when pushing to Supabase")
+    ap.add_argument("--title", default=None, help="human title for the case (e.g. 'R. Narayanan Santhanam')")
     args = ap.parse_args()
 
     include_images = not args.no_images
@@ -89,6 +93,15 @@ def main() -> int:
             print("\nPetition: %s after %d revision(s)." % ("PASS" if payload["passed"] else "FAIL", payload["revisions"]))
         elif kind == "done":
             print("\nDone. Private artifacts in: %s" % payload["output_dir"])
+
+    if args.supabase:
+        import json
+        rec = json.loads(Path(config.REAL_PATHS.case_record).read_text())
+        if args.case_id:
+            rec["case_id"] = args.case_id
+        print("\nPushing KB to Supabase (case_id=%s) …" % rec.get("case_id"))
+        counts = supastore.push_record(rec, title=args.title)
+        print("  pushed: %s" % counts)
     return 0
 
 

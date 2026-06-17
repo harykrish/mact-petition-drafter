@@ -143,7 +143,7 @@ def run_real_events(include_images: bool = True, use_llm: bool = True, streams=N
             trace = {"source_doc": f["rel"], "stream": f["stream"], "source_type": f["source_type"],
                      "extracted": 0, "results": [], "error": str(exc)}
         yield ("ingest", {"index": idx, "total": len(files), "doc": trace, "record": record})
-    commit = verify_and_commit(record, use_llm=use_llm, paths=paths)
+    commit = verify_and_commit(record, use_llm=use_llm, paths=paths, always_persist=True)
     yield ("kb_verify", {"verdict": commit["verdict"], "committed": commit["committed"], "record": record})
     if commit["committed"]:
         for kind, payload in draft_events(record, use_llm=use_llm, paths=paths):
@@ -166,17 +166,22 @@ def ingest_with_raws(record: Dict, source_doc: str, stream: str, source_type: st
 # --- verify + commit -----------------------------------------------------
 
 def verify_and_commit(record: Dict, use_llm: bool = True, commit_git: bool = False,
-                      paths=None) -> Dict:
-    """Verify the candidate KB. Persist ONLY on pass, to the case's paths."""
+                      paths=None, always_persist: bool = False) -> Dict:
+    """Verify the candidate KB. `committed` (passed the gate) only on PASS.
+
+    For real runs (always_persist=True) the record is ALWAYS written to the
+    private, gitignored output dir even on FAIL — an expensive extraction is
+    never thrown away over a single bad fact; the verdict still reports the gate.
+    Public/synthetic runs keep the strict commit-only-on-pass behaviour.
+    """
     paths = paths or config.SYNTHETIC_PATHS
     verdict = verify_kb.verify(record, use_llm=use_llm, logs_dir=paths.logs_dir)
-    committed = False
-    if verdict["result"] == "PASS":
+    committed = verdict["result"] == "PASS"
+    if committed or always_persist:
         store.save_case_record(record, paths.case_record)
         store.render_changelog_md(record, paths.changelog_md)
-        committed = True
-        if commit_git:
-            verdict["git"] = _git_commit_knowledge(record.get("case_id", "case"))
+    if committed and commit_git:
+        verdict["git"] = _git_commit_knowledge(record.get("case_id", "case"))
     return {"verdict": verdict, "committed": committed}
 
 

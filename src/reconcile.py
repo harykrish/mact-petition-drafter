@@ -142,7 +142,12 @@ def _history_entry(fact: Dict, reason: str) -> Dict:
 
 def reconcile_fact(record: Dict, raw: Dict) -> Dict:
     """Apply one RawFact to the record. Returns the classification result."""
-    field = raw["field"]
+    field = raw.get("field")
+    value = raw.get("value")
+    # Drop facts the model emitted without a usable field/value, so every stored
+    # fact is fully provenanced (invariant I1) instead of one blank gating the run.
+    if not field or value is None or (isinstance(value, str) and not value.strip()):
+        return {"classification": "skipped_empty", "field": field}
 
     # Stream ownership: ignore facts for an owned field from a non-owning stream.
     allowed = config.FIELD_STREAMS.get(field)

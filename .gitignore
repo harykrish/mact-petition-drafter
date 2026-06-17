@@ -12,3 +12,15 @@ venv/
 *.egg-info/
 .DS_Store
 logs/*.md
+
+# Heavy demo media — kept local, not in git
+demo/frames/
+demo/_aud/
+demo/_seq/
+demo/*.mp4
+demo/*.wav
+demo/*.m4a
+demo/*.mp3
+demo/template.pdf
+demo/package-lock.json
+demo/node_modules/

@@ -12,9 +12,12 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from src import config, llm, pipeline, store
+from src import api_kb, config, llm, pipeline, store
 
 app = FastAPI(title="MACT Petition Drafter")
+
+# Cambrian service API — KB + petition endpoints consumed by the apps on top
+app.include_router(api_kb.router)
 
 STATIC_DIR = config.BASE_DIR / "static"
 STATIC_DIR.mkdir(exist_ok=True)

@@ -46,8 +46,10 @@ def _client():
         # (the SDK default is 10 min/request). Short connect timeout catches dead
         # connections; read timeout is per-chunk for streaming, so long drafts are
         # unaffected as long as tokens keep arriving.
+        # Read timeout is generous because the petition draft on a large KB is a
+        # single non-streaming request that can take well over a minute.
         _CLIENT = anthropic.Anthropic(
-            timeout=httpx.Timeout(60.0, connect=8.0), max_retries=4)
+            timeout=httpx.Timeout(180.0, connect=8.0), max_retries=4)
     return _CLIENT
 
 
