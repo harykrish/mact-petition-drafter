@@ -179,6 +179,38 @@ def reconcile_fact(record: Dict, raw: Dict) -> Dict:
         return {"classification": "new", "fact_id": fact["id"], "field": field}
 
     if values_equal(field, existing["value"], raw["value"]):
+        a_auth = existing["confidence"]
+        f_auth = round(authority(raw["source_type"]), 2)
+        risk = config.get_field_risk(field)
+        margin = config.RISK_MARGINS[risk]
+        
+        # If they fuzzy match but strings differ, take the higher authority one
+        if existing["value"] != raw["value"] and f_auth > a_auth:
+            new_fact = _make_fact(record, raw)
+            new_fact["needs_human_review"] = False
+            new_fact["history"] = list(existing.get("history", [])) + [_history_entry(
+                existing, "Fuzzy match settled to higher-authority %s (%s)" % (raw["source_type"], new_fact["id"]))]
+            existing["superseded"] = True
+            record["facts"].append(new_fact)
+            
+            store.add_changelog(record, "fuzzy_settled",
+                                f"{field} fuzzy matched {existing['value']!r} vs {raw['value']!r}. Settled to higher-authority {raw['source_type']} (weight {f_auth} > {a_auth}). Risk: {risk}, Threshold: {margin}",
+                                fact_id=new_fact["id"], field=field)
+            return {"classification": "fuzzy_settled", "fact_id": new_fact["id"], "superseded": existing["id"], "field": field}
+        elif existing["value"] != raw["value"] and a_auth >= f_auth:
+            stale = _make_fact(record, raw)
+            stale["superseded"] = True
+            stale["needs_human_review"] = False
+            stale["history"].append(_history_entry(
+                stale, "Fuzzy match; retained existing higher/equal authority %s" % existing["id"]))
+            record["facts"].append(stale)
+            existing["needs_human_review"] = False
+            
+            store.add_changelog(record, "fuzzy_settled_skipped",
+                                f"{field} fuzzy matched {existing['value']!r} vs {raw['value']!r}. Retained higher/equal authority {existing['source_type']} (weight {a_auth} >= {f_auth}). Risk: {risk}, Threshold: {margin}",
+                                fact_id=stale["id"], field=field)
+            return {"classification": "fuzzy_settled_skipped", "fact_id": stale["id"], "kept": existing["id"], "field": field}
+
         store.add_changelog(record, "duplicate",
                             "Duplicate %s from %s corroborates %s" % (field, raw["source_type"], existing["id"]),
                             fact_id=existing["id"], field=field)
@@ -186,11 +218,14 @@ def reconcile_fact(record: Dict, raw: Dict) -> Dict:
 
     a_auth = existing["confidence"]
     f_auth = round(authority(raw["source_type"]), 2)
+    risk = config.get_field_risk(field)
+    margin = config.RISK_MARGINS[risk]
 
     # CORRECTION — incoming is clearly more authoritative.
     # (epsilon guards float subtraction, e.g. 0.95 - 0.85 == 0.0999...)
-    if f_auth - a_auth >= config.CORRECTION_MARGIN - 1e-9:
+    if f_auth - a_auth >= margin - 1e-9:
         new_fact = _make_fact(record, raw)
+        new_fact["needs_human_review"] = False
         # Carry forward the whole chain so the active fact's history holds every
         # prior value (keeps "no silent overwrite" true across repeated corrections).
         new_fact["history"] = list(existing.get("history", [])) + [_history_entry(
@@ -198,23 +233,22 @@ def reconcile_fact(record: Dict, raw: Dict) -> Dict:
         existing["superseded"] = True
         record["facts"].append(new_fact)
         store.add_changelog(record, "correction",
-                            "%s corrected %r -> %r (%s supersedes %s)" % (
-                                field, existing["value"], new_fact["value"],
-                                raw["source_type"], existing["source_type"]),
+                            f"{field} corrected {existing['value']!r} -> {new_fact['value']!r} ({raw['source_type']} supersedes {existing['source_type']}). Risk: {risk}, Threshold: {margin}",
                             fact_id=new_fact["id"], field=field)
         return {"classification": "correction", "fact_id": new_fact["id"],
                 "superseded": existing["id"], "field": field}
 
     # Incoming is clearly LESS authoritative — keep existing, archive incoming.
-    if a_auth - f_auth >= config.CORRECTION_MARGIN - 1e-9:
+    if a_auth - f_auth >= margin - 1e-9:
         stale = _make_fact(record, raw)
         stale["superseded"] = True
+        stale["needs_human_review"] = False
         stale["history"].append(_history_entry(
             stale, "Lower authority than active %s; retained existing" % existing["id"]))
         record["facts"].append(stale)
+        existing["needs_human_review"] = False
         store.add_changelog(record, "correction_skipped",
-                            "%s value %r from %s ignored; higher-authority %s (%s) retained" % (
-                                field, stale["value"], raw["source_type"], existing["source_type"], existing["id"]),
+                            f"{field} value {stale['value']!r} from {raw['source_type']} ignored; higher-authority {existing['source_type']} ({existing['id']}) retained. Risk: {risk}, Threshold: {margin}",
                             fact_id=stale["id"], field=field)
         return {"classification": "correction_skipped", "fact_id": stale["id"],
                 "kept": existing["id"], "field": field}

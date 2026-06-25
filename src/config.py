@@ -154,12 +154,48 @@ NUMERIC_FIELDS = {"victim_age", "hospitalization_days", "functional_disability_p
 DATE_FIELDS = {"accident_date"}
 # Name-like fields use initial-aware token matching (so "Ramesh K. Sharma"
 # and "Ramesh Kumar Sharma" are the same fact, not a contradiction).
-NAME_FIELDS = {"victim_name", "offending_driver", "vehicle_owner"}
+NAME_FIELDS = {"victim_name", "offending_driver", "vehicle_owner", "accident_place"}
 
 # Narrative/descriptive fields: multiple sources can each contribute a phrasing
 # without conflicting. Differing values are appended (corroboration), never
 # flagged as contradictions, and are exempt from the single-active-fact rule.
-NARRATIVE_FIELDS = {"injuries", "negligence", "accident_place", "permanent_disability",
+NARRATIVE_FIELDS = {"injuries", "negligence", "permanent_disability",
                     "image_finding"}
+
+FIELD_RISK = {
+    # Low Risk
+    "victim_name": "low",
+    "offending_driver": "low",
+    "vehicle_owner": "low",
+    "accident_place": "low",
+    "occupation": "low",
+
+    # Medium Risk
+    "victim_age": "medium",
+    "accident_date": "medium",
+    "offending_vehicle": "medium",
+    "insurer": "medium",
+    "policy_number": "medium",
+    "negligence": "medium",
+    "injuries": "medium",
+    "permanent_disability": "medium",
+    "employment_type": "medium",
+
+    # High Risk
+    "annual_income": "high",
+    "functional_disability_pct": "high",
+    "hospitalization_days": "high",
+}
+
+def get_field_risk(field: str) -> str:
+    if field.startswith("medical_expense_"):
+        return "high"
+    return FIELD_RISK.get(field, "medium")
+
+RISK_MARGINS = {
+    "low": 0.00,
+    "medium": 0.10,
+    "high": 1.00,
+}
 
 NEEDS_REVIEW_BELOW = 0.80

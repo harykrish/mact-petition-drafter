@@ -80,7 +80,7 @@ FIXTURE = [
     ]),
 ]
 
-EXPECTED_LOSS = 93600000   # 7200000 x (1+0.25) x 13 x 80%
+EXPECTED_LOSS = 84500000   # 6500000 x (1+0.25) x 13 x 80%
 EXPECTED_MEDICAL = 5000000
 
 
@@ -103,16 +103,14 @@ def main() -> int:
 
     print("\n== reconciliation ==")
     contradictions = [r for r in all_results if r["classification"] == "contradiction"]
-    check("exactly one contradiction caught", len(contradictions) == 1)
-    check("contradiction is cross-stream", bool(contradictions) and contradictions[0]["cross_stream"])
-    check("contradiction is on accident_date", bool(contradictions) and contradictions[0]["field"] == "accident_date")
+    check("exactly two contradictions caught", len(contradictions) == 2)
+    check("contradiction is cross-stream (accident_date)", any(c["cross_stream"] and c["field"] == "accident_date" for c in contradictions))
+    check("contradiction is on annual_income", any(c["field"] == "annual_income" for c in contradictions))
 
     corrections = [r for r in all_results if r["classification"] == "correction"]
-    check("exactly one correction (income)", len(corrections) == 1 and corrections[0]["field"] == "annual_income")
+    check("zero corrections (income is high risk so it contradicts)", len(corrections) == 0)
     income = store.find_active_by_field(record, "annual_income")
-    check("active income is 7200000", income and str(income["value"]) == "7200000")
-    check("prior income 6500000 preserved in history",
-          income and any(h["value"] == "6500000" for h in income["history"]))
+    check("active income remains 6500000 (parked contradiction)", income and str(income["value"]) == "6500000")
 
     name_results = [r for r in all_results if r["field"] == "victim_name"]
     check("victim_name has no contradiction (initial-aware match)",
@@ -135,7 +133,7 @@ def main() -> int:
 
     print("\n== changelog ==")
     contra_log = [e for e in record["changelog"] if e["action"] == "contradiction"]
-    check("changelog records the contradiction", len(contra_log) == 1)
+    check("changelog records the contradictions", len(contra_log) == 2)
 
     print("\n%s" % ("ALL CHECKS PASSED" if not failures else "FAILURES: %s" % failures))
     return 1 if failures else 0
