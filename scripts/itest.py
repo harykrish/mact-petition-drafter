@@ -37,7 +37,7 @@ FIR date adopted) the claimant's car was struck by a rashly driven lorry [F005].
 ## SCHEDULE OF COMPENSATION
 | Head | Amount (INR) | Basis |
 |------|-------------|-------|
-| Loss of future earning capacity | %d | 7200000 x 1.25 x 13 x 80%% (Sarla Verma, Pranay Sethi) |
+| Loss of future earning capacity | %d | 6500000 x 1.25 x 13 x 80%% (Sarla Verma, Pranay Sethi) |
 | Medical expenses | %d | itemised hospital bill |
 | Pain and suffering | %d | Pranay Sethi conventional head |
 | **TOTAL** | %d | |
